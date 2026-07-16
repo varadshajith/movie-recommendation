@@ -1,17 +1,18 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const db = require('./db');
 
 const TMDB_KEY = process.env.TMDB_KEY;
 const PORT = 8181;
 const BASE = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p';
 
-// ---- in-memory caches (no DB) ----
-const genreMap = {};             // id -> human name
-const detailsCache = new Map();  // id -> raw TMDB details (with keywords+credits)
-// ponytail: cache raw details, not the built Card — Card.reason varies by profile,
-// so a per-id card cache would be wrong. buildTags/toCard are cheap; the fetch is the cost.
+// contract v2: the 6 signals and their weights
+const WEIGHTS = { nope: -2, like: 2, meh: -0.5, save: 4, seenLoved: 5, seenDisliked: -4 };
+const MEH_TTL_MS = 30 * 24 * 60 * 60 * 1000; // "meh" resurfaces after 30 days
+
+const genreMap = {}; // id -> human name (loaded once at boot)
 
 // ---- TMDB fetch (key stays server-side; never returned to client) ----
 async function tmdb(path, params = {}) {
@@ -26,14 +27,16 @@ async function tmdb(path, params = {}) {
 // Global discovery filters: no adult, must have poster, >=100 votes.
 const passesFilters = (m) => !!(m && m.poster_path && (m.vote_count ?? 0) >= 100 && !m.adult);
 
+// movie_cache (SQLite) survives restarts -> far fewer TMDB calls than the old in-memory Map.
 async function getDetails(id) {
-  if (detailsCache.has(id)) return detailsCache.get(id);
-  const d = await tmdb(`/movie/${id}`, { append_to_response: 'keywords,credits' });
-  detailsCache.set(id, d);
+  const cached = db.getCachedMovie(id);
+  if (cached) return cached;
+  const d = await tmdb(`/movie/${id}`, { append_to_response: 'keywords,credits,videos' });
+  db.putCachedMovie(id, d);
   return d;
 }
 
-// ---- THE single source of truth for tag keys ----
+// ---- THE single source of truth for tag keys (100% internal to the backend now) ----
 function buildTags(d) {
   const tags = new Set();
   for (const g of d.genres || []) tags.add(`genre:${g.id}`);
@@ -72,8 +75,15 @@ function buildReason(tags, profile) {
   return 'Because you like ' + top.map(([t]) => labelForTag(t)).join(' & ');
 }
 
+// first YouTube Trailer, else first YouTube Teaser, else null
+function trailerKey(d) {
+  const yt = ((d.videos && d.videos.results) || []).filter((v) => v.site === 'YouTube');
+  const pick = yt.find((v) => v.type === 'Trailer') || yt.find((v) => v.type === 'Teaser');
+  return pick ? pick.key : null;
+}
+
+// Card: no `tags` field anymore (contract v2 — tags are internal only)
 function toCard(d, profile) {
-  const tags = buildTags(d);
   const year = d.release_date ? Number(d.release_date.slice(0, 4)) : null;
   return {
     id: d.id,
@@ -85,10 +95,36 @@ function toCard(d, profile) {
     overview: d.overview || '',
     poster: d.poster_path ? `${IMG}/w500${d.poster_path}` : '',
     backdrop: d.backdrop_path ? `${IMG}/w1280${d.backdrop_path}` : null,
-    tags,
-    reason: buildReason(tags, profile),
+    trailerKey: trailerKey(d),
+    reason: buildReason(buildTags(d), profile),
     isWildcard: false,
   };
+}
+
+function toDetail(d, profile) {
+  const crew = (d.credits && d.credits.crew) || [];
+  const cast = ((d.credits && d.credits.cast) || []).slice(0, 6).map((c) => ({
+    name: c.name,
+    character: c.character || null,
+    photo: c.profile_path ? `${IMG}/w185${c.profile_path}` : null,
+  }));
+  return {
+    ...toCard(d, profile),
+    tagline: d.tagline || null,
+    director: crew.find((c) => c.job === 'Director')?.name || null,
+    cast,
+    releaseDate: d.release_date || null,
+  };
+}
+
+const currentProfile = () => ({ tags: db.getProfileTags() });
+
+async function cardsForList(list, profile) {
+  const ids = db.getList(list);
+  const cards = await Promise.all(ids.map(async (id) => {
+    try { return toCard(await getDetails(id), profile); } catch { return null; }
+  }));
+  return cards.filter(Boolean);
 }
 
 // ---- pool page fetchers (page cursors cycle so repeat calls return fresh titles) ----
@@ -153,37 +189,95 @@ app.get('/api/search', async (req, res) => {
   } catch {
     return res.json({ results: [] });
   }
+  const profile = currentProfile();
   const cards = await Promise.all(hits.map(async (m) => {
-    try { return toCard(await getDetails(m.id), null); } catch { return null; }
+    try { return toCard(await getDetails(m.id), profile); } catch { return null; }
   }));
   res.json({ results: cards.filter(Boolean) });
 });
 
+app.get('/api/state', async (_req, res) => {
+  const profile = currentProfile();
+  const [watchlist, seenLoved] = await Promise.all([
+    cardsForList('watchlist', profile),
+    cardsForList('seenLoved', profile),
+  ]);
+  res.json({
+    onboarded: db.hasProfile(),
+    hintsSeen: db.getSetting('hintsSeen') === 'true',
+    watchlist,
+    seenLoved,
+    swipeCount: db.swipeCount(),
+  });
+});
+
+app.get('/api/movie/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: 'bad id' });
+  try {
+    res.json({ movie: toDetail(await getDetails(id), currentProfile()) });
+  } catch {
+    res.status(502).json({ error: 'movie fetch failed' });
+  }
+});
+
+// Seed the scorecard straight into the DB (no profile returned).
 app.post('/api/onboard', async (req, res) => {
-  const genreIds = req.body.genreIds || [];
-  const lovedIds = req.body.lovedIds || [];
-  const tags = {};
-  const add = (t, w) => { tags[t] = (tags[t] || 0) + w; };
-  for (const g of genreIds) add(`genre:${g}`, 2);
+  const genreIds = Array.isArray(req.body.genreIds) ? req.body.genreIds : [];
+  const lovedIds = Array.isArray(req.body.lovedIds) ? req.body.lovedIds : [];
+
+  for (const g of genreIds) db.bumpTag(`genre:${g}`, 2);
   for (const id of lovedIds) {
     try {
-      for (const t of buildTags(await getDetails(id))) add(t, 4);
+      for (const t of buildTags(await getDetails(id))) db.bumpTag(t, 4);
     } catch { /* skip a movie that fails to fetch */ }
+    db.exclude(Number(id), null); // already loved -> never show it again
   }
-  res.json({ profile: { tags } });
+  res.json({ ok: true });
+});
+
+// The single write path for the 6 signals.
+app.post('/api/action', async (req, res) => {
+  const movieId = Number(req.body.movieId);
+  const action = String(req.body.action || '');
+  if (!Number.isFinite(movieId) || !(action in WEIGHTS)) {
+    return res.status(400).json({ ok: false, error: 'bad movieId or action' });
+  }
+  const weight = WEIGHTS[action];
+  const now = Date.now();
+
+  let tags = [];
+  try { tags = buildTags(await getDetails(movieId)); }
+  catch { /* still record the signal even if TMDB details fail */ }
+
+  for (const t of tags) db.bumpTag(t, weight);
+  db.logAction(movieId, action, weight, now);
+
+  // meh -> temporary exclusion; everything else -> forever
+  db.exclude(movieId, action === 'meh' ? now + MEH_TTL_MS : null);
+
+  if (action === 'save') db.addToList(movieId, 'watchlist', now);
+  if (action === 'seenLoved') db.addToList(movieId, 'seenLoved', now);
+
+  res.json({ ok: true, watchlistCount: db.listCount('watchlist') });
 });
 
 app.post('/api/next', async (req, res) => {
-  const profile = req.body.profile || { tags: {}, exclude: [] };
-  const tags = profile.tags || {};
-  const exclude = new Set(profile.exclude || []);
   const count = Number(req.body.count) || 10;
+  const inQueue = Array.isArray(req.body.inQueue) ? req.body.inQueue : [];
+  const tagScores = db.getProfileTags(); // scorecard lives in the DB now
+  const profile = { tags: tagScores };
+
+  const now = Date.now();
+  // active exclusions (forever OR not-yet-expired) UNION the deck the frontend already holds
+  const exclude = new Set(db.activeExclusions(now));
+  for (const id of inQueue) exclude.add(id);
 
   const wildCount = Math.round(count * 0.3);
   const mainCount = count - wildCount;
 
   // top 3 positive genre tags -> main pool; cold profile falls back to trending inside collectIds
-  const genreIds = Object.entries(tags)
+  const genreIds = Object.entries(tagScores)
     .filter(([k, v]) => k.startsWith('genre:') && v > 0)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
@@ -194,17 +288,17 @@ app.post('/api/next', async (req, res) => {
   const wildIds = await collectIds('wild', [], wildCount + 3, exclude, seen);
 
   const build = async (ids, isWild) => {
-    const cards = await Promise.all(ids.map(async (id) => {
-      try { return toCard(await getDetails(id), profile); } catch { return null; }
+    const items = await Promise.all(ids.map(async (id) => {
+      try {
+        const d = await getDetails(id);
+        if (exclude.has(d.id)) return null;
+        const card = toCard(d, profile);
+        card.isWildcard = isWild;
+        const fit = buildTags(d).reduce((s, t) => s + (tagScores[t] || 0), 0);
+        return { card, fit };
+      } catch { return null; }
     }));
-    const out = [];
-    for (const c of cards) {
-      if (!c || exclude.has(c.id)) continue;
-      c.isWildcard = isWild;
-      c.fit = c.tags.reduce((s, t) => s + (tags[t] || 0), 0);
-      out.push(c);
-    }
-    return out;
+    return items.filter(Boolean);
   };
 
   let mains = await build(mainIds, false);
@@ -222,14 +316,23 @@ app.post('/api/next', async (req, res) => {
 
   const out = [];
   const usedIds = new Set();
-  for (const c of result) {
-    if (usedIds.has(c.id)) continue; // de-dupe within batch
-    usedIds.add(c.id);
-    const { fit, ...card } = c; // strip internal fit field before returning
-    out.push(card);
+  for (const item of result) {
+    if (usedIds.has(item.card.id)) continue; // de-dupe within batch
+    usedIds.add(item.card.id);
+    out.push(item.card);
     if (out.length >= count) break;
   }
   res.json({ cards: out });
+});
+
+app.post('/api/settings', (req, res) => {
+  if (typeof req.body.hintsSeen === 'boolean') db.setSetting('hintsSeen', req.body.hintsSeen);
+  res.json({ ok: true });
+});
+
+app.post('/api/reset', (_req, res) => {
+  db.resetAll(); // wipes everything except movie_cache
+  res.json({ ok: true });
 });
 
 async function loadGenres() {
@@ -243,13 +346,19 @@ function runSelfTest() {
   const d = {
     id: 27205, title: 'Inception', release_date: '2010-07-16', vote_average: 8.369,
     runtime: 148, overview: 'x', poster_path: '/p.jpg', backdrop_path: '/b.jpg',
-    original_language: 'en',
+    original_language: 'en', tagline: 'Your mind is the scene of the crime.',
     genres: [{ id: 878, name: 'Science Fiction' }, { id: 53, name: 'Thriller' }],
     keywords: { keywords: [{ name: 'dream' }, { name: 'heist' }] },
+    videos: { results: [
+      { site: 'YouTube', type: 'Teaser', key: 'teaseKey' },
+      { site: 'YouTube', type: 'Trailer', key: 'realTrailer' },
+      { site: 'Vimeo', type: 'Trailer', key: 'ignoreMe' },
+    ] },
     credits: {
       crew: [{ job: 'Director', name: 'Christopher Nolan' }, { job: 'Writer', name: 'Nobody' }],
-      cast: [{ name: 'Leonardo DiCaprio' }, { name: 'Joseph Gordon-Levitt' },
-        { name: 'Elliot Page' }, { name: 'Not Billed' }],
+      cast: [{ name: 'Leonardo DiCaprio', character: 'Cobb', profile_path: '/leo.jpg' },
+        { name: 'Joseph Gordon-Levitt', character: 'Arthur' },
+        { name: 'Elliot Page', character: 'Ariadne' }, { name: 'Not Billed' }],
     },
   };
   const tags = buildTags(d);
@@ -258,15 +367,27 @@ function runSelfTest() {
   assert(tags.includes('decade:2010s'));
   assert.equal(tags.filter((t) => t.startsWith('person:')).length, 4); // 1 director + top 3 cast
   assert(!tags.includes('person:Not Billed')); // 4th cast dropped
+
   const profile = { tags: { 'genre:878': 5, 'person:Christopher Nolan': 4 } };
   const card = toCard(d, profile);
   assert.equal(card.rating, 8.4);
   assert.equal(card.year, 2010);
   assert.equal(card.reason, 'Because you like Science Fiction & Christopher Nolan');
   assert.equal(card.poster, `${IMG}/w500/p.jpg`);
-  const fit = card.tags.reduce((s, t) => s + (profile.tags[t] || 0), 0);
+  assert.equal(card.trailerKey, 'realTrailer'); // Trailer beats Teaser; Vimeo ignored
+  assert(!('tags' in card)); // tags gone from the Card payload (contract v2)
+  const fit = tags.reduce((s, t) => s + (profile.tags[t] || 0), 0);
   assert.equal(fit, 9);
   assert.equal(toCard(d, { tags: {} }).reason, null); // no positive tags -> null
+
+  const detail = toDetail(d, profile);
+  assert.equal(detail.director, 'Christopher Nolan');
+  assert.equal(detail.tagline, 'Your mind is the scene of the crime.');
+  assert.equal(detail.releaseDate, '2010-07-16');
+  assert.equal(detail.cast.length, 4); // top 6 requested, only 4 present
+  assert.equal(detail.cast[0].photo, `${IMG}/w185/leo.jpg`);
+  assert.equal(detail.cast[1].photo, null); // no profile_path -> null
+  assert.equal(detail.cast[0].character, 'Cobb');
   console.log('selftest OK');
 }
 

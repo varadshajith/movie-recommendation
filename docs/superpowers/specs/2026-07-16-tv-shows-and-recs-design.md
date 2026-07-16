@@ -69,7 +69,9 @@ Every `db.js` helper takes `medium` as its first arg (`bumpTag(medium, tag, delt
 
 ### Recommendation engine (three fixes, in `/api/next`)
 
-1. **Cold start.** When `swipeCount(medium) < COLD_THRESHOLD` (~15), seed the main pool from the user's loved titles' TMDB `/{medium}/{id}/recommendations` (collected from the `lists`/onboarding lovedIds and top-scoring cached titles) instead of raw genre-discover. Warm profiles keep genre-discover. Dedup + exclusion rules unchanged.
+1. **Cold start.** When `swipeCount(medium) < COLD_THRESHOLD` (~15), seed the main pool from the user's loved titles' TMDB `/{medium}/{id}/recommendations` instead of raw genre-discover. Warm profiles keep genre-discover. Dedup + exclusion rules unchanged.
+
+   **Seed source fix:** `/api/onboard` currently bumps tags and excludes the loved IDs but stores them nowhere retrievable — there is no record of which films seeded the taste. Change onboard to also write lovedIds into the `seenLoved` list (semantically "seen & loved", and it populates the drawer shelf too). Cold-start then reads seed IDs from the `seenLoved` list for `/recommendations`. If the list is empty (e.g. onboarded via genres only), fall back to genre-discover.
 
 2. **Smart wildcards.** The 30% wildcard slice stops being global trending. It discovers from taste-adjacent signals: top `person:` tags via discover `with_people` (resolve person names→IDs is not available cheaply, so use the **next-tier genres**, profile rank 4–8, as the primary adjacency signal; keep `with_people` only if a person→id is already known). Global trending remains the final fallback when the profile is too cold to produce adjacency. Wildcards still flagged `isWildcard:true`.
 

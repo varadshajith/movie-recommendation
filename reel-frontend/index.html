@@ -18,13 +18,12 @@
   --gold:#dd9a34;                       /* deepened so warmth still reads on light glass */
   --like:#22c55e;
   --nope:#ef4444;
-  --love:#f59e0b;                       /* amber — gold washed out on white */
+  --meh:#6b7280;                        /* slate grey — the "not sure" signal */
 
   --glass-fill:rgba(255,255,255,.55);
   --glass-fill-strong:rgba(255,255,255,.66);
   --glass-line:rgba(255,255,255,.75);
   --glass-hi:rgba(255,255,255,.90);
-  --glass-shadow:0 8px 30px rgba(0,0,0,.12), inset 0 1px 0 var(--glass-hi), inset 0 0 0 1px rgba(255,255,255,.40);
 
   --r-lg:26px;
   --r-md:20px;
@@ -78,15 +77,22 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   opacity:.05;mix-blend-mode:overlay;
 }
 
-/* ============================================================= GLASS */
+/* ============================================================= GLASS
+   Light-mode material dressing. liquid-glass.js sets its own
+   backdrop-filter inline when a surface is wired (real refraction on
+   Chromium, frosted fallback on Safari/Firefox); the CSS below carries
+   the tint, specular highlight and 1px glass border in BOTH cases. */
 .glass{
   position:relative;
-  background:var(--glass-fill);
+  border-radius:28px;
+  background:linear-gradient(180deg, rgba(255,255,255,0.42), rgba(255,255,255,0.60));
   backdrop-filter:blur(18px) saturate(180%);
   -webkit-backdrop-filter:blur(18px) saturate(180%);
-  border:1px solid var(--glass-line);
-  border-radius:var(--r-lg);
-  box-shadow:var(--glass-shadow);
+  box-shadow:
+    0 24px 60px rgba(0,0,0,0.14),            /* soft drop shadow, light-mode weight */
+    inset 0 1px 1px rgba(255,255,255,0.95),  /* specular top highlight */
+    inset 0 -8px 20px rgba(255,255,255,0.35),
+    inset 0 0 0 1px rgba(255,255,255,0.55);  /* 1px glass border */
   isolation:isolate;
 }
 .glass::after{                           /* grain speckle on the glass itself */
@@ -94,7 +100,6 @@ button{font-family:inherit;color:inherit;cursor:pointer;border:none;background:n
   background-image:var(--grain);opacity:.06;mix-blend-mode:overlay;
   pointer-events:none;z-index:-1;
 }
-.glass.lg-fallback,.glass{ }             /* liquid-glass sets its own backdrop-filter inline when wired */
 
 /* ============================================================= APP SHELL */
 .app{position:relative;z-index:1;height:100dvh;display:flex;flex-direction:column;align-items:center}
@@ -121,7 +126,8 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
   display:grid;place-items:center;font-size:18px;color:var(--ink);
   background:var(--glass-fill);border:1px solid var(--glass-line);
   backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
-  box-shadow:var(--glass-shadow);position:relative;transition:transform .2s var(--e-out),background .2s;
+  box-shadow:0 8px 24px rgba(0,0,0,.12), inset 0 1px 0 var(--glass-hi);
+  position:relative;transition:transform .2s var(--e-out),background .2s;
 }
 .icon-btn:hover{transform:translateY(-2px);background:var(--glass-fill-strong)}
 .icon-btn:active{transform:scale(.92)}
@@ -133,7 +139,7 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
   width:74px;height:74px;border-radius:50%;display:grid;place-items:center;
   color:var(--ink);
   background:var(--glass-fill-strong);border:1px solid var(--glass-line);
-  box-shadow:var(--glass-shadow);
+  box-shadow:0 8px 24px rgba(0,0,0,.12), inset 0 1px 0 var(--glass-hi);
   transition:transform .22s var(--e-spring),background .22s,box-shadow .22s,color .22s;
 }
 .swipe-btn svg{width:34px;height:34px}
@@ -228,6 +234,7 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
   transform-origin:center bottom;
   will-change:transform,opacity;
   user-select:none;-webkit-user-select:none;
+  cursor:pointer;
 }
 .card .poster{position:absolute;inset:0;background:#12101a center/cover no-repeat}
 .card .scrim{position:absolute;inset:0;pointer-events:none;
@@ -248,29 +255,34 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
   background:rgba(255,255,255,.60);border:1px solid rgba(255,255,255,.75);
   backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);
   box-shadow:0 6px 18px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.9);
+  pointer-events:none;
 }
 .why::before{content:"";width:7px;height:7px;flex:none;background:var(--gold);transform:rotate(45deg);border-radius:1px}
 .wild{
   position:absolute;top:14px;right:14px;z-index:6;
   padding:6px 11px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.1em;
   text-transform:uppercase;color:#1a1206;background:var(--gold);
-  box-shadow:0 4px 16px rgba(242,200,121,.5);
+  box-shadow:0 4px 16px rgba(242,200,121,.5);pointer-events:none;
 }
 .why + .wild{top:52px}
 
+/* PERSISTENT liquid-glass info panel — one node reused across every card,
+   so the SVG refraction filter is built once, not per swipe. Only its
+   inner content swaps; liquid-glass's own ResizeObserver refreshes the map
+   only if the height actually changes. It lives inside whichever card is on
+   top (moved, never recreated), so it flies with the card yet survives. */
 .info{
   position:absolute;left:12px;right:12px;bottom:12px;z-index:5;
   border-radius:var(--r-md);padding:16px 17px;
-  display:flex;flex-direction:column;gap:9px;
-  background:rgba(255,255,255,.66);       /* bumped so dark text stays legible over any poster */
 }
+.info-body{display:flex;flex-direction:column;gap:9px}
 .info .title{font-family:'Bebas Neue',sans-serif;font-size:clamp(30px,7.6vw,40px);
   line-height:.94;letter-spacing:.015em}
-.info .meta{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);flex-wrap:wrap}
-.info .meta .star{color:var(--gold);display:inline-flex;align-items:center}
-.info .meta .star svg{width:14px;height:14px}
-.info .meta b{color:var(--ink);font-weight:600}
-.info .gchips{display:flex;gap:7px;flex-wrap:wrap}
+.info .meta,.expand-meta{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.info .meta .star,.expand-meta .star{color:var(--gold);display:inline-flex;align-items:center}
+.info .meta .star svg,.expand-meta .star svg{width:14px;height:14px}
+.info .meta b,.expand-meta b{color:var(--ink);font-weight:600}
+.gchips{display:flex;gap:7px;flex-wrap:wrap}
 .gchip{padding:4px 10px;border-radius:999px;font-size:11.5px;color:var(--ink);
   background:rgba(27,27,31,.07);border:1px solid rgba(27,27,31,.10);
   backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -282,16 +294,28 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
   position:absolute;top:34px;z-index:8;padding:8px 18px;border-radius:12px;
   font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:.08em;
   border:4px solid currentColor;opacity:0;pointer-events:none;
-  background:rgba(255,255,255,.55);border-radius:12px;
+  background:rgba(255,255,255,.55);
   text-shadow:0 1px 2px rgba(255,255,255,.7);
   box-shadow:0 4px 16px rgba(0,0,0,.22), inset 0 0 0 1px rgba(255,255,255,.5);
 }
 .stamp.like{left:22px;color:var(--like);transform:rotate(-16deg)}
 .stamp.nope{right:22px;color:var(--nope);transform:rotate(16deg)}
-.stamp.love{left:50%;top:60px;color:var(--love);transform:translateX(-50%) rotate(-6deg)}
+.stamp.meh{left:50%;top:58px;color:var(--meh);transform:translateX(-50%) rotate(-6deg)}
+
+/* subtle "pull down for info" cue — shown while dragging down, no stamp */
+.info-cue{
+  position:absolute;left:50%;top:38%;transform:translateX(-50%);z-index:8;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  opacity:0;pointer-events:none;color:var(--ink);
+}
+.info-cue .chev{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.62);box-shadow:0 6px 18px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.9)}
+.info-cue .chev svg{width:22px;height:22px}
+.info-cue small{font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  text-shadow:0 1px 6px rgba(255,255,255,.75)}
 
 /* deck states */
-.state{position:absolute;inset:0;border-radius:var(--r-lg);display:grid;place-items:center;text-align:center;padding:30px}
+.state{position:absolute;inset:0;border-radius:var(--r-lg);display:grid;place-items:center;text-align:center;padding:30px;cursor:default}
 .skeleton{overflow:hidden;background:linear-gradient(135deg,#f1eee8,#e0dcd3)}
 .skeleton::after{content:"";position:absolute;inset:0;
   background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.6) 50%,transparent 70%);
@@ -316,18 +340,16 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 .act:hover{transform:translateY(-3px) scale(1.06)}
 .act:active{transform:scale(.9)}
 .act.sm{width:48px;height:48px;font-size:19px}
-.act.nope{color:var(--nope)}
-.act.nope:hover{background:rgba(239,68,68,.18);box-shadow:0 8px 26px rgba(239,68,68,.35)}
-.act.like{color:var(--like)}
-.act.like:hover{background:rgba(34,197,94,.18);box-shadow:0 8px 26px rgba(34,197,94,.35)}
-.act.love{color:var(--love)}
-.act.love:hover{background:rgba(245,158,11,.20);box-shadow:0 8px 26px rgba(245,158,11,.40)}
+.act.meh{color:var(--meh)}
+.act.meh:hover{background:rgba(107,114,128,.16);box-shadow:0 8px 26px rgba(107,114,128,.30)}
+.act.info{color:var(--ink)}
+.act.info:hover{background:var(--glass-fill-strong)}
 .act.seen{color:var(--ink)}
+.act.seen:hover{background:var(--glass-fill-strong)}
+.act.save{color:var(--gold)}
+.act.save:hover{background:rgba(221,154,52,.18);box-shadow:0 8px 26px rgba(221,154,52,.38)}
 .act svg{width:24px;height:24px}
 .act.sm svg{width:21px;height:21px}
-/* pass/like live on the big edge buttons at desktop, in the bar on mobile */
-@media (min-width:721px){ .only-mobile{display:none} }
-.act.seen:hover{background:var(--glass-fill-strong)}
 
 /* seen popover */
 .pop{
@@ -341,8 +363,91 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
   background:var(--glass-fill-strong);border:1px solid var(--glass-line);color:var(--ink);
   transition:transform .18s var(--e-out),background .18s}
 .pop button:hover{transform:translateY(-2px)}
-.pop .loved:hover{background:rgba(245,158,11,.18)}
+.pop .loved:hover{background:rgba(221,154,52,.18)}
 .pop .disliked:hover{background:rgba(239,68,68,.18)}
+
+/* ============================================================= EXPANDED VIEW */
+.expand-scrim{
+  position:fixed;inset:0;z-index:85;
+  background:rgba(24,22,28,.46);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  opacity:0;visibility:hidden;transition:opacity .4s var(--e-out),visibility .4s;
+}
+.expand-scrim.open{opacity:1;visibility:visible}
+.expand{
+  position:fixed;z-index:90;left:50%;top:50%;
+  width:min(94vw,560px);max-height:92dvh;overflow-y:auto;overflow-x:hidden;
+  transform:translate(-50%,-50%) scale(.84);opacity:0;visibility:hidden;
+  transition:opacity .32s var(--e-out),transform .5s var(--e-spring),visibility .32s;
+  padding:14px;display:flex;flex-direction:column;gap:14px;
+  -webkit-overflow-scrolling:touch;
+}
+.expand.open{opacity:1;visibility:visible;transform:translate(-50%,-50%) scale(1)}
+.expand-close{position:absolute;top:12px;right:12px;z-index:8}
+.expand-media{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;
+  background:#0c0b10;box-shadow:0 12px 34px rgba(0,0,0,.34), inset 0 0 0 1px rgba(255,255,255,.35)}
+.expand-media iframe,.expand-media img{position:absolute;inset:0;width:100%;height:100%;border:0}
+.expand-media img{object-fit:cover}
+.expand-media .m-load{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.5);
+  font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+.expand-body{display:flex;flex-direction:column;gap:12px;padding:2px 8px 4px}
+.expand-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,8vw,50px);line-height:.92;letter-spacing:.015em}
+.expand-tag{font-style:italic;color:var(--muted);font-size:14px;margin-top:-6px}
+.expand-overview{font-size:14px;line-height:1.6;color:var(--ink)}
+.expand-dir{font-size:13px;color:var(--muted)}
+.expand-dir b{color:var(--ink);font-weight:600}
+.cast-head{font-size:11px;text-transform:uppercase;letter-spacing:.16em;color:var(--muted);font-weight:600}
+.cast-row{display:flex;gap:14px;overflow-x:auto;padding:2px 0 6px}
+.cast{width:72px;flex:none;text-align:center}
+.cast .ph{width:64px;height:64px;border-radius:50%;margin:0 auto 6px;overflow:hidden;
+  background:#ddd6ca center/cover no-repeat;display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--muted);
+  box-shadow:0 4px 12px rgba(0,0,0,.18), inset 0 0 0 1px rgba(255,255,255,.6)}
+.cast .nm{font-size:11.5px;font-weight:600;line-height:1.2}
+.cast .ch{font-size:10.5px;color:var(--faint);line-height:1.25;margin-top:1px}
+.expand-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;padding:2px 0 4px}
+.seen-choice{display:none;gap:10px;justify-content:center;padding:0 0 6px}
+.seen-choice.open{display:flex}
+.seen-choice button{padding:11px 16px;border-radius:14px;font-size:13.5px;font-weight:600;
+  background:var(--glass-fill-strong);border:1px solid var(--glass-line);color:var(--ink);
+  transition:transform .18s var(--e-out),background .18s}
+.seen-choice button:hover{transform:translateY(-2px)}
+.seen-choice .loved:hover{background:rgba(221,154,52,.18)}
+.seen-choice .disliked:hover{background:rgba(239,68,68,.18)}
+
+/* ============================================================= HINTS OVERLAY */
+.hints-scrim{
+  position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;
+  background:rgba(30,28,34,.42);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);
+  opacity:0;visibility:hidden;transition:opacity .35s var(--e-out),visibility .35s;
+}
+.hints-scrim.open{opacity:1;visibility:visible}
+.hints-panel{width:min(90vw,380px);padding:28px 26px;display:flex;flex-direction:column;gap:18px;
+  transform:scale(.9);transition:transform .45s var(--e-spring)}
+.hints-scrim.open .hints-panel{transform:scale(1)}
+.hints-panel h2{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.03em}
+.hints-panel h2 span{color:var(--gold)}
+.hint-rows{display:flex;flex-direction:column;gap:12px}
+.hint-row{display:flex;align-items:center;gap:14px}
+.hint-key{min-width:54px;height:38px;padding:0 12px;border-radius:11px;display:grid;place-items:center;
+  background:rgba(255,255,255,.55);border:1px solid rgba(27,27,31,.12);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(0,0,0,.08);
+  font-size:11.5px;font-weight:700;letter-spacing:.06em;color:var(--ink)}
+.hint-key svg{width:20px;height:20px}
+.hint-label{font-size:14.5px;color:var(--ink);font-weight:500}
+.hint-label b{font-weight:700}
+.hint-foot{font-size:12px;color:var(--faint);text-align:center;margin-top:2px}
+
+/* ============================================================= TOAST */
+.toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 100px);z-index:110;
+  transform:translateX(-50%) translateY(14px);opacity:0;visibility:hidden;
+  padding:12px 20px;font-size:14px;font-weight:600;letter-spacing:.01em;color:var(--ink);
+  display:flex;align-items:center;gap:9px;border-radius:16px;
+  transition:opacity .25s var(--e-out),transform .3s var(--e-spring),visibility .25s;
+}
+.toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+.toast svg{width:18px;height:18px;color:var(--gold)}
 
 /* ============================================================= DRAWER */
 .scrim-bg{position:fixed;inset:0;z-index:70;background:rgba(28,26,32,.30);
@@ -365,10 +470,6 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;overflow-y:auto;padding:2px;align-content:start}
 .gitem{position:relative;aspect-ratio:2/3;border-radius:12px;overflow:hidden;background:#111 center/cover;
   box-shadow:0 6px 18px rgba(0,0,0,.5)}
-.gitem button{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;
-  background:rgba(0,0,0,.72);color:#fff;font-size:13px;display:grid;place-items:center;
-  opacity:0;transition:opacity .2s}
-.gitem:hover button{opacity:1}
 .gitem .t{position:absolute;left:0;right:0;bottom:0;padding:14px 8px 7px;font-size:11px;line-height:1.2;
   background:linear-gradient(transparent,rgba(0,0,0,.85));font-weight:500}
 .drawer-empty{grid-column:1/-1;text-align:center;color:var(--faint);padding:50px 10px;font-size:14px}
@@ -380,7 +481,7 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 </style>
 </head>
 <body>
-<!-- ambient / atmosphere -->
+<!-- ambient / atmosphere — the blurred key art behind every glass surface -->
 <div class="stage" aria-hidden="true">
   <div class="amb" id="ambA"></div>
   <div class="amb" id="ambB"></div>
@@ -393,6 +494,9 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 <div class="topbar">
   <div class="brand"><span class="dot"></span>REEL</div>
   <div class="top-right">
+    <button class="icon-btn" id="helpBtn" aria-label="Show the controls" title="Controls (?)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+    </button>
     <button class="icon-btn" id="resetBtn" aria-label="Reset and start over" title="Reset">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
     </button>
@@ -448,26 +552,75 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
   </section>
 </div>
 
-<!-- action bar (bottom). Pass/Like also live here for narrow screens. -->
+<!-- action bar (bottom): Meh (↑) · Info (↓) · Seen · Save -->
 <div class="actions glass hidden" id="actionBar">
-  <button class="act nope only-mobile" data-act="nope" aria-label="Pass (swipe left)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  <button class="act meh" data-act="meh" aria-label="Meh — not sure (swipe up)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+  </button>
+  <button class="act sm info" data-act="expand" aria-label="Info and trailer (swipe down)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
   </button>
   <button class="act sm seen" data-act="seen" aria-label="Already seen it">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
   </button>
-  <button class="act love" data-act="love" aria-label="Save to watchlist (swipe up)">
+  <button class="act save" data-act="save" aria-label="Save to watchlist (Enter)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v17l-6-4-6 4z"/></svg>
-  </button>
-  <button class="act like only-mobile" data-act="like" aria-label="Like (swipe right)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.3-8.6C1 8 2.6 4.8 5.8 4.8c1.9 0 3.4 1.1 4.2 2.4C10.8 5.9 12.3 4.8 14.2 4.8 17.4 4.8 19 8 17.3 11.4 15 15.6 12 20 12 20z"/></svg>
   </button>
 </div>
 
-<!-- seen popover -->
+<!-- seen popover (deck) -->
 <div class="pop glass" id="pop">
   <button class="loved"    id="pLoved">Loved it</button>
   <button class="disliked" id="pDisliked">Not for me</button>
+</div>
+
+<!-- expanded view -->
+<div class="expand-scrim" id="expandScrim"></div>
+<section class="expand glass" id="expandView" aria-label="Film details" role="dialog" aria-modal="true">
+  <button class="icon-btn expand-close" id="expandClose" aria-label="Close">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <div class="expand-media" id="expandMedia"></div>
+  <div class="expand-body" id="expandBody"></div>
+  <div class="seen-choice" id="expandSeenChoice">
+    <button class="loved"    id="eLoved">Loved it</button>
+    <button class="disliked" id="eDisliked">Not for me</button>
+  </div>
+  <div class="expand-actions" id="expandActions">
+    <button class="act nope" data-eact="nope" aria-label="Pass">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <button class="act meh" data-eact="meh" aria-label="Meh — not sure">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+    </button>
+    <button class="act seen" data-eact="seen" aria-label="Already seen it">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+    </button>
+    <button class="act save" data-eact="save" aria-label="Save to watchlist">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v17l-6-4-6 4z"/></svg>
+    </button>
+  </div>
+</section>
+
+<!-- startup hints -->
+<div class="hints-scrim" id="hintsScrim">
+  <div class="hints-panel glass">
+    <h2>How to <span>swipe</span></h2>
+    <div class="hint-rows">
+      <div class="hint-row"><span class="hint-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></span><span class="hint-label"><b>Pass</b> — not for me</span></div>
+      <div class="hint-row"><span class="hint-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span><span class="hint-label"><b>Like</b> — want to watch</span></div>
+      <div class="hint-row"><span class="hint-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span><span class="hint-label"><b>Meh</b> — not sure</span></div>
+      <div class="hint-row"><span class="hint-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span><span class="hint-label"><b>Info</b> + trailer</span></div>
+      <div class="hint-row"><span class="hint-key">ENTER</span><span class="hint-label"><b>Save</b> to watchlist</span></div>
+    </div>
+    <div class="hint-foot">Press any key or tap to start</div>
+  </div>
+</div>
+
+<!-- toast -->
+<div class="toast glass" id="toast">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h12v17l-6-4-6 4z"/></svg>
+  <span id="toastText">Saved</span>
 </div>
 
 <!-- watchlist drawer -->
@@ -489,56 +642,29 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 <script src="src/lib/liquid-glass.js"></script>
 <script>
 /* =====================================================================
-   Reel — cinematic movie swiper (vanilla).  Talks ONLY to the backend.
-   Tags are opaque strings; the frontend never parses them.
+   Reel — cinematic movie swiper (vanilla). Talks ONLY to the backend.
+   CONTRACT v2: the backend (SQLite) owns ALL persistent memory —
+   profile, exclusions, watchlist, watched, settings. This frontend
+   holds nothing but an in-memory queue of unswiped cards; every swipe
+   is one fire-and-forget POST /api/action. No localStorage, no scoring,
+   no tag math anywhere in this file.
    ponytail: single file on purpose — the brief asks for one index.html.
-   // future: /movie -> /tv shows would be a second backend surface.
    ===================================================================== */
 const API = 'http://localhost:8181';
-
-/* weights: the only "intelligence" here is plain arithmetic over tags. */
-const WEIGHT = { like:+2, nope:-2, love:+4, seenLoved:+5, seenDisliked:-4 };
-
-const LS = 'reel.v1';
 const $  = (id) => document.getElementById(id);
 const reduceMotion = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-/* --------------------------------------------------------------- state */
+/* --------------------------------------------------------------- state
+   queue = the only thing we own. watchlist/seenLoved are backend-owned
+   copies (hydrated by /api/state, updated optimistically after actions)
+   purely to paint the drawer. */
 const state = {
-  profile:  { tags:{}, exclude:[] },  // exclude is rebuilt on every /next
-  seen:     [],   // every id acted on
-  watched:  [],   // ids marked "seen" — never resurface, not in watchlist
-  watchlist:[],   // full cards saved to watch later (Love / save)
-  seenLoved:[],   // full cards for "already seen & loved"
-  queue:    [],   // full cards waiting to be swiped
-  onboarded:false,
+  queue:     [],
+  onboarded: false,
+  watchlist: [],
+  seenLoved: [],
 };
-
-function save(){
-  const { profile, seen, watched, watchlist, seenLoved, onboarded } = state;
-  localStorage.setItem(LS, JSON.stringify({ profile, seen, watched, watchlist, seenLoved, onboarded }));
-}
-function load(){
-  try{
-    const raw = localStorage.getItem(LS);
-    if(!raw) return false;
-    const d = JSON.parse(raw);
-    if(!d || !d.onboarded) return false;
-    Object.assign(state, d);
-    state.queue = [];
-    return true;
-  }catch{ return false; }
-}
-
-/* pure: pour a swipe's weight into the scorecard. Exported for the self-check. */
-function scoreTags(tags, w, target){
-  for(const t of tags) target[t] = (target[t] || 0) + w;
-  return target;
-}
-/* every id we never want back = acted-on + watched + whatever's queued */
-function buildExclude(){
-  return [...new Set([ ...state.seen, ...state.watched, ...state.queue.map(c=>c.id) ])];
-}
+let hintsSeen = true;   // assume seen until /api/state says otherwise
 
 /* --------------------------------------------------------------- net */
 async function getJSON(path){
@@ -560,6 +686,17 @@ function fmtRuntime(m){
   const h = Math.floor(m/60), min = m%60;
   return h ? `${h}h ${min}m` : `${min}m`;
 }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function initials(name){ return String(name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?'; }
+
+/* pure: merge freshly fetched cards onto the queue, de-duped by id.
+   Exported-ish for the self-check at the bottom. */
+function mergeQueue(existing, incoming){
+  const have = new Set(existing.map(c=>c.id));
+  const out = existing.slice();
+  for(const c of (incoming||[])) if(c && !have.has(c.id)){ out.push(c); have.add(c.id); }
+  return out;
+}
 
 /* --------------------------------------------------------------- glass */
 function glassify(el, opts){
@@ -575,7 +712,6 @@ function setAmbient(url){
   if(!url) return;
   const incoming = ambBottom;
   incoming.style.backgroundImage = `url("${url}")`;
-  // force layer swap on next frame so the transition runs
   requestAnimationFrame(()=>{
     incoming.classList.add('on');
     ambTop.classList.remove('on');
@@ -697,13 +833,10 @@ $('backBtn').onclick = ()=> gotoStep(1);
 async function finishOnboarding(){
   $('nextBtn').disabled = true; $('nextBtn').textContent = 'Reading taste…';
   try{
-    const { profile } = await postJSON('/api/onboard', {
+    await postJSON('/api/onboard', {
       genreIds:[...selectedGenres], lovedIds: lovedMovies.map(m=>m.id),
     });
-    state.profile.tags = (profile && profile.tags) || {};
-    // the films they told us they love shouldn't come back as suggestions
-    for(const m of lovedMovies) if(!state.seen.includes(m.id)) state.seen.push(m.id);
-    state.onboarded = true; save();
+    state.onboarded = true;
     enterDeck();
   }catch{
     $('nextBtn').disabled = false; $('nextBtn').textContent = 'Start swiping';
@@ -715,6 +848,7 @@ async function finishOnboarding(){
    DECK
    =================================================================== */
 let refilling = false, deckReady = false;
+let infoPanel = null;   // the ONE persistent liquid-glass info node
 
 async function enterDeck(){
   show('deckScreen');
@@ -723,6 +857,7 @@ async function enterDeck(){
   document.querySelectorAll('.swipe-btn').forEach((b)=> glassify(b, { blur:2, saturate:1.6, radius:999 }));
   deckReady = true;
   await refill(true);
+  if(!hintsSeen) openHints();     // first-run controls, shown once over the deck
 }
 
 async function refill(initial){
@@ -730,10 +865,9 @@ async function refill(initial){
   refilling = true;
   if(initial && state.queue.length===0) renderSkeleton();
   try{
-    state.profile.exclude = buildExclude();
-    const { cards } = await postJSON('/api/next', { profile:state.profile, count:10 });
-    const have = new Set([...state.queue.map(c=>c.id), ...state.seen, ...state.watched]);
-    for(const c of cards) if(!have.has(c.id)){ state.queue.push(c); have.add(c.id); }
+    // send the ids already sitting in the deck so /next never hands one back
+    const { cards } = await postJSON('/api/next', { count:10, inQueue: state.queue.map(c=>c.id) });
+    state.queue = mergeQueue(state.queue, cards);
     if(deckReady) renderDeck();
   }catch{
     if(state.queue.length===0) renderEmpty(true);
@@ -743,31 +877,26 @@ async function refill(initial){
 }
 
 function renderSkeleton(){
+  if(infoPanel) infoPanel.remove();
   $('deck').innerHTML = '<div class="card state skeleton pos0"></div>';
 }
 function renderEmpty(offline){
+  if(infoPanel) infoPanel.remove();
   $('deck').innerHTML = `<div class="card state empty pos0">
     <div class="big">${offline ? 'Backend offline' : 'That’s the reel'}</div>
     <div>${offline ? 'Start the server on :8181 and hit reset.' : 'You’ve seen everything we lined up. Check back soon.'}</div>
   </div>`;
 }
 
-function renderDeck(){
-  const deck = $('deck');
-  if(state.queue.length===0){ renderEmpty(false); return; }
-  deck.innerHTML = '';
-  const top3 = state.queue.slice(0,3);
-  // render back-to-front so the top card is last in DOM (drag target on top)
-  top3.forEach((card, i)=>{
-    deck.appendChild(buildCard(card, i));
-  });
-  setAmbient(top3[0].backdrop || top3[0].poster);
-  bindDrag(deck.querySelector('.pos0'), top3[0]);
+/* the persistent panel: built once, glassified once, content swapped forever */
+function ensurePanel(){
+  if(infoPanel) return infoPanel;
+  infoPanel = document.createElement('div');
+  infoPanel.className = 'info glass';
+  infoPanel.innerHTML = '<div class="info-body"></div>';
+  return infoPanel;
 }
-
-function buildCard(card, pos){
-  const el = document.createElement('article');
-  el.className = `card pos${pos}`;
+function fillPanel(card){
   const runtime = fmtRuntime(card.runtime);
   const meta = [
     card.year || '',
@@ -775,6 +904,34 @@ function buildCard(card, pos){
     runtime || '',
   ].filter(Boolean).join('<span style="opacity:.4">·</span>');
   const chips = (card.genres||[]).slice(0,3).map(g=>`<span class="gchip">${esc(g)}</span>`).join('');
+  ensurePanel().querySelector('.info-body').innerHTML = `
+    <div class="title">${esc(card.title)}</div>
+    <div class="meta">${meta}</div>
+    ${chips ? `<div class="gchips">${chips}</div>` : ''}
+    ${card.overview ? `<p class="overview">${esc(card.overview)}</p>` : ''}`;
+  // ponytail: no manual refresh() — liquid-glass's own ResizeObserver
+  // refires the SVG map only when the panel's height actually changes.
+}
+
+function renderDeck(){
+  const deck = $('deck');
+  if(state.queue.length===0){ renderEmpty(false); return; }
+  if(infoPanel) infoPanel.remove();     // detach & preserve the node before wiping
+  deck.innerHTML = '';
+  const top3 = state.queue.slice(0,3);
+  // render back-to-front so the top card is last in DOM (drag target on top)
+  top3.forEach((card, i)=> deck.appendChild(buildCard(card, i)));
+  const top = deck.querySelector('.pos0');
+  fillPanel(top3[0]);
+  top.appendChild(ensurePanel());       // move (never recreate) the glass panel in
+  if(!infoPanel.__lg) glassify(infoPanel, { blur:2, saturate:1.6 });
+  setAmbient(top3[0].backdrop || top3[0].poster);
+  bindDrag(top, top3[0]);
+}
+
+function buildCard(card, pos){
+  const el = document.createElement('article');
+  el.className = `card pos${pos}`;
   el.innerHTML = `
     <div class="poster" style="background-image:url('${card.poster}')"></div>
     <div class="scrim"></div>
@@ -783,22 +940,21 @@ function buildCard(card, pos){
     ${pos===0 ? `
       <div class="stamp like">LIKE</div>
       <div class="stamp nope">NOPE</div>
-      <div class="stamp love">LOVE</div>` : ''}
-    <div class="info glass">
-      <div class="title">${esc(card.title)}</div>
-      <div class="meta">${meta}</div>
-      ${chips ? `<div class="gchips">${chips}</div>` : ''}
-      ${card.overview ? `<p class="overview">${esc(card.overview)}</p>` : ''}
-    </div>`;
+      <div class="stamp meh">MEH</div>
+      <div class="info-cue">
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+        <small>Info</small>
+      </div>` : ''}`;
   return el;
 }
-function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* --------------------------------------------------------------- drag */
-const THRESH = 100;
+const THRESH = 100;   // px to commit a directional swipe
+const TAP = 7;        // px of slop below which a press is a tap → expand
 function bindDrag(el, card){
   if(!el || el.classList.contains('state')) return;
-  const like = el.querySelector('.stamp.like'), nope = el.querySelector('.stamp.nope'), love = el.querySelector('.stamp.love');
+  const like = el.querySelector('.stamp.like'), nope = el.querySelector('.stamp.nope'),
+        meh  = el.querySelector('.stamp.meh'),  cue  = el.querySelector('.info-cue');
   let sx=0, sy=0, dx=0, dy=0, active=false, id=null;
 
   const down = (e)=>{
@@ -810,26 +966,33 @@ function bindDrag(el, card){
     dx=e.clientX-sx; dy=e.clientY-sy;
     const rot = dx/18;
     el.style.transform = `translate(${dx}px,${dy}px) rotate(${rot}deg)`;
-    const up = dy < 0 && Math.abs(dy) > Math.abs(dx);
-    like.style.opacity = up ? 0 : Math.max(0, dx/THRESH);
-    nope.style.opacity = up ? 0 : Math.max(0, -dx/THRESH);
-    love.style.opacity = up ? Math.min(1, -dy/THRESH) : 0;
-    const s = (t)=> t.style.transform = t.style.transform.replace(/ scale\([^)]*\)/,'') + ` scale(${1+Math.min(.4,Math.abs((up?dy:dx))/THRESH*0.3)})`;
-    if(up) s(love); else if(dx>0) s(like); else if(dx<0) s(nope);
+    const vert = Math.abs(dy) > Math.abs(dx);
+    const up   = vert && dy < 0;
+    const down = vert && dy > 0;
+    like.style.opacity = (!vert && dx>0) ? Math.max(0, dx/THRESH) : 0;
+    nope.style.opacity = (!vert && dx<0) ? Math.max(0, -dx/THRESH) : 0;
+    meh.style.opacity  = up ? Math.min(1, -dy/THRESH) : 0;
+    cue.style.opacity  = down ? Math.min(1, dy/THRESH) : 0;
+    const s = (t,amt)=> t.style.transform = t.style.transform.replace(/ scale\([^)]*\)/,'') + ` scale(${1+Math.min(.4,amt/THRESH*0.3)})`;
+    if(up) s(meh,-dy); else if(!vert && dx>0) s(like,dx); else if(!vert && dx<0) s(nope,-dx);
   };
   const upEvt = (e)=>{
     if(!active || e.pointerId!==id) return;
     active=false;
-    const upSwipe = dy < 0 && Math.abs(dy) > Math.abs(dx);
-    if(upSwipe && -dy > THRESH)          fly(el, card, 'love');
-    else if(dx >  THRESH)                fly(el, card, 'like');
-    else if(dx < -THRESH)                fly(el, card, 'nope');
-    else{                                // spring back
-      el.classList.add('settle');
-      el.style.transform = '';
-      like.style.opacity=nope.style.opacity=love.style.opacity=0;
-    }
+    const dist = Math.abs(dx)+Math.abs(dy);
+    const vert = Math.abs(dy) > Math.abs(dx);
+    if(dist < TAP)                       { springBack(); openExpand(card); }   // tap
+    else if(vert && dy < -THRESH)          fly(el, card, 'meh');
+    else if(vert && dy >  THRESH)        { springBack(); openExpand(card); }   // pull down → info
+    else if(dx >  THRESH)                  fly(el, card, 'like');
+    else if(dx < -THRESH)                  fly(el, card, 'nope');
+    else                                   springBack();
   };
+  function springBack(){
+    el.classList.add('settle');
+    el.style.transform = '';
+    like.style.opacity=nope.style.opacity=meh.style.opacity=cue.style.opacity=0;
+  }
   el.addEventListener('pointerdown', down);
   el.addEventListener('pointermove', move);
   el.addEventListener('pointerup', upEvt);
@@ -837,67 +1000,75 @@ function bindDrag(el, card){
 }
 
 /* fling the top card off-screen, then commit the action */
-function fly(el, card, dir){
-  const off = { like:[innerWidth*1.3, -40, 22], nope:[-innerWidth*1.3, -40, -22], love:[0, -innerHeight*1.2, 0] }[dir];
+function fly(el, card, kind){
+  const off = { like:[innerWidth*1.3, -40, 22], nope:[-innerWidth*1.3, -40, -22], meh:[0, -innerHeight*1.2, 0] }[kind];
   el.classList.add('fly');
   el.style.transform = `translate(${off[0]}px,${off[1]}px) rotate(${off[2]}deg)`;
   el.style.opacity = '0';
-  const commit = ()=> commitAction(dir, card);
+  const commit = ()=> commitAction(kind, card);
   reduceMotion ? commit() : setTimeout(commit, 340);
 }
 
 /* ===================================================================
-   ACTIONS — every signal flows through here
+   ACTIONS — every signal is one fire-and-forget POST, optimistic UI
    =================================================================== */
+function postAction(movieId, action){
+  postJSON('/api/action', { movieId, action })
+    .then(r=>{ if(r && typeof r.watchlistCount==='number') setBadge(r.watchlistCount); })
+    .catch(()=>{ /* fire and forget — the card already advanced */ });
+}
+
 function commitAction(kind, card){
-  const w = WEIGHT[kind];
-  if(w!==undefined) scoreTags(card.tags, w, state.profile.tags);
-  if(!state.seen.includes(card.id)) state.seen.push(card.id);
+  if(!card) return;
+  // optimistic drawer hydration (backend is the source of truth on reload)
+  if(kind==='save'      && !state.watchlist.some(c=>c.id===card.id)) state.watchlist.unshift(card);
+  if(kind==='seenLoved' && !state.seenLoved.some(c=>c.id===card.id)) state.seenLoved.unshift(card);
+  if(kind==='save') setBadge(state.watchlist.length);
 
-  if(kind==='love'){
-    if(!state.watchlist.some(c=>c.id===card.id)) state.watchlist.unshift(card);
-  }else if(kind==='seenLoved'){
-    if(!state.watched.includes(card.id)) state.watched.push(card.id);
-    if(!state.seenLoved.some(c=>c.id===card.id)) state.seenLoved.unshift(card);
-  }else if(kind==='seenDisliked'){
-    if(!state.watched.includes(card.id)) state.watched.push(card.id);
-  }
+  postAction(card.id, kind);
 
-  // drop the card that was at the top of the queue
-  const idx = state.queue.findIndex(c=>c.id===card.id);
-  if(idx>=0) state.queue.splice(idx,1);
-
-  updateBadge(); save();
+  const i = state.queue.findIndex(c=>c.id===card.id);
+  if(i>=0) state.queue.splice(i,1);
   renderDeck();
   if(state.queue.length < 4) refill(false);
 }
 
-/* action buttons drive the same gestures (animated) */
-function actFromButton(dir){
-  const top = $('deck').querySelector('.pos0');
-  if(!top || top.classList.contains('state')) return;
-  const card = state.queue[0];
+/* SAVE has no gesture: flash a toast, bump the badge, advance the deck */
+function doSave(card){
   if(!card) return;
-  if(dir==='seen'){ togglePop(true); return; }
-  fly(top, card, dir);
+  showToast('Saved to watchlist');
+  commitAction('save', card);
 }
-// every control (edge buttons + bottom bar) drives the same gestures via data-act
+function saveTop(){
+  const top = $('deck').querySelector('.pos0');
+  const card = state.queue[0];
+  if(top && card && !top.classList.contains('state')) doSave(card);
+}
+
+/* every control (edge buttons + bottom bar) routes through here via data-act */
+function actFromButton(act){
+  const top = $('deck').querySelector('.pos0');
+  const card = state.queue[0];
+  if(!card || !top || top.classList.contains('state')) return;
+  if(act==='seen')   return togglePop();
+  if(act==='expand') return openExpand(card);
+  if(act==='save')   return doSave(card);
+  if(act==='meh'||act==='like'||act==='nope') fly(top, card, act);
+}
 document.querySelectorAll('[data-act]').forEach((el)=>{
   el.addEventListener('click', ()=> actFromButton(el.dataset.act));
 });
 
-/* seen popover */
+/* seen popover (deck) */
 function togglePop(force){
   const open = force!==undefined ? force : !$('pop').classList.contains('open');
   $('pop').classList.toggle('open', open);
 }
-$('pLoved').onclick = ()=>{ togglePop(false); seenAction('seenLoved'); };
+$('pLoved').onclick    = ()=>{ togglePop(false); seenAction('seenLoved'); };
 $('pDisliked').onclick = ()=>{ togglePop(false); seenAction('seenDisliked'); };
 function seenAction(kind){
   const top = $('deck').querySelector('.pos0'), card = state.queue[0];
   if(!top || !card || top.classList.contains('state')) return;
-  // little pop-out up-left/right so it reads as a decision, then commit
-  const dir = kind==='seenLoved' ? 'love' : 'nope';
   const off = kind==='seenLoved' ? [0,-innerHeight*1.2,0] : [-innerWidth*1.3,-40,-22];
   top.classList.add('fly');
   top.style.transform = `translate(${off[0]}px,${off[1]}px) rotate(${off[2]}deg)`;
@@ -909,22 +1080,163 @@ document.addEventListener('click',(e)=>{
     togglePop(false);
 });
 
-/* keyboard: arrows mirror the gestures */
+/* ===================================================================
+   EXPANDED VIEW — fullscreen trailer + full detail
+   =================================================================== */
+let expandCard = null;
+function expandOpen(){ return $('expandView').classList.contains('open'); }
+
+async function openExpand(card){
+  if(!card || expandOpen()) return;
+  expandCard = card;
+  $('expandSeenChoice').classList.remove('open');
+  renderExpandShell(card);           // paint what we already have, instantly
+  $('expandScrim').classList.add('open');
+  $('expandView').classList.add('open');
+  try{
+    const { movie } = await getJSON('/api/movie/'+card.id);
+    if(expandCard && expandCard.id===card.id) renderExpandFull(movie);
+  }catch{ /* keep the shell — backdrop + basics still read fine offline */ }
+}
+function closeExpand(){
+  $('expandScrim').classList.remove('open');
+  $('expandView').classList.remove('open');
+  $('expandMedia').innerHTML = '';   // kill the trailer (stops audio)
+  $('expandSeenChoice').classList.remove('open');
+  expandCard = null;
+}
+$('expandClose').onclick = closeExpand;
+$('expandScrim').onclick = closeExpand;
+
+function renderExpandShell(card){
+  const media = $('expandMedia');
+  const bg = card.backdrop || card.poster;
+  media.innerHTML = bg
+    ? `<img src="${esc(bg)}" alt="" /><div class="m-load">Loading trailer…</div>`
+    : `<div class="m-load">Loading…</div>`;
+  const runtime = fmtRuntime(card.runtime);
+  const meta = [
+    card.year || '',
+    `<span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.8-6.2 3.8 1.6-7L2 9.5l7.1-.6z"/></svg></span> <b>${(card.rating||0).toFixed(1)}</b>`,
+    runtime || '',
+  ].filter(Boolean).join('<span style="opacity:.4">·</span>');
+  const chips = (card.genres||[]).map(g=>`<span class="gchip">${esc(g)}</span>`).join('');
+  $('expandBody').innerHTML = `
+    <div class="expand-title">${esc(card.title)}</div>
+    <div class="expand-meta">${meta}</div>
+    ${chips ? `<div class="gchips">${chips}</div>` : ''}
+    ${card.overview ? `<p class="expand-overview">${esc(card.overview)}</p>` : ''}`;
+}
+
+function renderExpandFull(movie){
+  const media = $('expandMedia');
+  if(movie.trailerKey){
+    media.innerHTML = `<iframe src="https://www.youtube.com/embed/${encodeURIComponent(movie.trailerKey)}?autoplay=1&rel=0&modestbranding=1"
+      title="Trailer" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+  }else{
+    const bg = movie.backdrop || movie.poster;
+    media.innerHTML = bg ? `<img src="${esc(bg)}" alt="" />` : `<div class="m-load">No trailer available</div>`;
+  }
+  const runtime = fmtRuntime(movie.runtime);
+  const meta = [
+    movie.year || '',
+    `<span class="star"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7-6.2-3.8-6.2 3.8 1.6-7L2 9.5l7.1-.6z"/></svg></span> <b>${(movie.rating||0).toFixed(1)}</b>`,
+    runtime || '',
+  ].filter(Boolean).join('<span style="opacity:.4">·</span>');
+  const chips = (movie.genres||[]).map(g=>`<span class="gchip">${esc(g)}</span>`).join('');
+  const cast = (movie.cast||[]).slice(0,6).map(p=>`
+    <div class="cast">
+      <div class="ph"${p.photo ? ` style="background-image:url('${esc(p.photo)}')"` : ''}>${p.photo ? '' : esc(initials(p.name))}</div>
+      <div class="nm">${esc(p.name||'')}</div>
+      ${p.character ? `<div class="ch">${esc(p.character)}</div>` : ''}
+    </div>`).join('');
+  $('expandBody').innerHTML = `
+    <div class="expand-title">${esc(movie.title)}</div>
+    ${movie.tagline ? `<div class="expand-tag">“${esc(movie.tagline)}”</div>` : ''}
+    <div class="expand-meta">${meta}</div>
+    ${chips ? `<div class="gchips">${chips}</div>` : ''}
+    ${movie.overview ? `<p class="expand-overview">${esc(movie.overview)}</p>` : ''}
+    ${movie.director ? `<div class="expand-dir">Directed by <b>${esc(movie.director)}</b></div>` : ''}
+    ${cast ? `<div class="cast-head">Cast</div><div class="cast-row">${cast}</div>` : ''}`;
+}
+
+/* expanded-view actions: act, collapse, advance the deck */
+$('expandActions').querySelectorAll('[data-eact]').forEach((b)=>{
+  b.addEventListener('click', ()=>{
+    const act = b.dataset.eact, card = expandCard;
+    if(!card) return;
+    if(act==='seen'){ $('expandSeenChoice').classList.toggle('open'); return; }
+    if(act==='save'){ doSave(card); closeExpand(); return; }
+    commitAction(act, card); closeExpand();     // nope / meh
+  });
+});
+$('eLoved').onclick    = ()=>{ const c=expandCard; commitAction('seenLoved', c); closeExpand(); };
+$('eDisliked').onclick = ()=>{ const c=expandCard; commitAction('seenDisliked', c); closeExpand(); };
+
+/* ===================================================================
+   HINTS OVERLAY — shown once on a fresh DB, reopenable via "?"
+   =================================================================== */
+function hintsOpen(){ return $('hintsScrim').classList.contains('open'); }
+function openHints(){ $('hintsScrim').classList.add('open'); }
+function dismissHints(){
+  $('hintsScrim').classList.remove('open');
+  if(!hintsSeen){                 // persist the "seen" flag exactly once
+    hintsSeen = true;
+    postJSON('/api/settings', { hintsSeen:true }).catch(()=>{});
+  }
+}
+$('hintsScrim').addEventListener('click', dismissHints);
+$('helpBtn').onclick = openHints;
+
+/* ===================================================================
+   TOAST
+   =================================================================== */
+let toastTimer = null;
+function showToast(text){
+  $('toastText').textContent = text;
+  const t = $('toast');
+  if(!t.__lg) glassify(t, { blur:2, saturate:1.6, radius:16 });
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 1500);
+}
+
+/* ===================================================================
+   KEYBOARD — the arrows/keys mirror every gesture
+   =================================================================== */
 addEventListener('keydown',(e)=>{
+  if(hintsOpen()){ e.preventDefault(); dismissHints(); return; }   // any key dismisses hints
+
+  if(expandOpen()){
+    if(e.key==='Escape' || e.key==='ArrowDown'){ e.preventDefault(); closeExpand(); return; }
+    if(e.target.tagName==='INPUT') return;
+    const c = expandCard;
+    if(e.key==='Enter'){ e.preventDefault(); doSave(c); closeExpand(); return; }
+    const emap = { ArrowLeft:'nope', ArrowRight:'like', ArrowUp:'meh' };
+    if(emap[e.key]){ e.preventDefault(); commitAction(emap[e.key], c); closeExpand(); }
+    return;
+  }
+
+  if(e.key==='Escape'){
+    if($('drawer').classList.contains('open')){ closeDrawer(); return; }
+    if($('pop').classList.contains('open')){ togglePop(false); return; }
+  }
+
   if($('deckScreen').classList.contains('hidden')) return;
   if(e.target.tagName==='INPUT') return;
-  const map={ArrowLeft:'nope',ArrowRight:'like',ArrowUp:'love'};
+
+  if(e.key==='?'){ e.preventDefault(); openHints(); return; }
+  if(e.key==='s' || e.key==='S'){ e.preventDefault(); togglePop(); return; }
+  if(e.key==='Enter'){ e.preventDefault(); saveTop(); return; }
+  const map = { ArrowLeft:'nope', ArrowRight:'like', ArrowUp:'meh', ArrowDown:'expand' };
   if(map[e.key]){ e.preventDefault(); actFromButton(map[e.key]); }
 });
 
 /* ===================================================================
-   WATCHLIST DRAWER
+   WATCHLIST DRAWER — read-only mirror of the backend's saved lists
    =================================================================== */
 let drawerTab = 'watchlist';
-function updateBadge(){
-  const n = state.watchlist.length;
-  const b = $('listBadge'); b.textContent = n; b.classList.toggle('zero', n===0);
-}
+function setBadge(n){ const b = $('listBadge'); b.textContent = n; b.classList.toggle('zero', !n); }
 function openDrawer(){
   $('drawer').classList.add('open'); $('drawerScrim').classList.add('open');
   renderDrawer();
@@ -944,9 +1256,9 @@ function switchTab(t){
 function renderDrawer(){
   const list = drawerTab==='watchlist' ? state.watchlist : state.seenLoved;
   const grid = $('drawerGrid'); grid.innerHTML='';
-  if(list.length===0){
+  if(!list.length){
     grid.innerHTML = `<div class="drawer-empty">${drawerTab==='watchlist'
-      ? 'Swipe up on films you must watch — they land here.'
+      ? 'Press Enter (or the bookmark) on films you must watch — they land here.'
       : 'Mark films you’ve seen &amp; loved to build this shelf.'}</div>`;
     return;
   }
@@ -954,23 +1266,17 @@ function renderDrawer(){
     const it = document.createElement('div');
     it.className='gitem'; it.style.backgroundImage=`url("${c.poster}")`;
     it.innerHTML = `<div class="t">${esc(c.title)}</div>`;
-    const x=document.createElement('button'); x.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'; x.setAttribute('aria-label','Remove '+c.title);
-    x.onclick=()=>{
-      const arr = drawerTab==='watchlist' ? state.watchlist : state.seenLoved;
-      const i = arr.findIndex(m=>m.id===c.id); if(i>=0) arr.splice(i,1);
-      save(); updateBadge(); renderDrawer();
-    };
-    it.appendChild(x); grid.appendChild(it);
+    grid.appendChild(it);
   }
 }
 
 /* ===================================================================
    RESET + BOOT
    =================================================================== */
-$('resetBtn').onclick = ()=>{
-  if(!confirm('Reset Reel and start onboarding again?')) return;
-  localStorage.removeItem(LS);
-  location.reload();
+$('resetBtn').onclick = async ()=>{
+  if(!confirm('Reset Reel and start over? This wipes your taste, watchlist and history.')) return;
+  try{ await postJSON('/api/reset', {}); }catch{}
+  location.reload();    // fresh boot → /api/state reports onboarded:false → onboarding
 };
 
 function show(which){
@@ -983,27 +1289,38 @@ function show(which){
 /* wire liquid-glass to the persistent chrome (refraction on Chromium,
    frosted fallback elsewhere; CSS keeps tint/border/highlight either way) */
 function wireGlass(){
-  glassify($('drawer'), { blur:3, saturate:1.5 });
-  glassify($('pop'),    { blur:2, saturate:1.6, radius:20 });
-  glassify($('step1'),  { blur:2, saturate:1.5 });
-  glassify($('step2'),  { blur:2, saturate:1.5 });
+  glassify($('drawer'),     { blur:3, saturate:1.5 });
+  glassify($('pop'),        { blur:2, saturate:1.6, radius:20 });
+  glassify($('step1'),      { blur:2, saturate:1.5 });
+  glassify($('step2'),      { blur:2, saturate:1.5 });
+  glassify($('expandView'), { blur:3, saturate:1.6 });
+  glassify(document.querySelector('.hints-panel'), { blur:3, saturate:1.6 });
 }
 
-function boot(){
+async function boot(){
   wireGlass();
-  updateBadge();
-  if(load()){ enterDeck(); }
-  else{ startOnboarding(); }
+  try{
+    const s = await getJSON('/api/state');
+    state.onboarded = !!s.onboarded;
+    hintsSeen       = !!s.hintsSeen;
+    state.watchlist = s.watchlist || [];
+    state.seenLoved = s.seenLoved || [];
+    setBadge(state.watchlist.length);
+    if(state.onboarded) enterDeck();
+    else startOnboarding();
+  }catch{
+    // backend unreachable — drop into onboarding, which shows its own offline note
+    startOnboarding();
+  }
 }
 boot();
 
 /* ---- one runnable check for the money path: #selftest in the URL ---- */
 if(location.hash==='#selftest'){
-  const tags={}; scoreTags(['genre:878','kw:heist'], WEIGHT.like, tags); scoreTags(['genre:878'], WEIGHT.love, tags);
-  console.assert(tags['genre:878']===6 && tags['kw:heist']===2, 'scoreTags accumulates');
-  const s=state.seen, w=state.watched; state.seen=[1,2]; state.watched=[2]; state.queue=[{id:3}];
-  console.assert(JSON.stringify(buildExclude().sort())==='[1,2,3]', 'exclude = seen∪watched∪queue, de-duped');
-  state.seen=s; state.watched=w; state.queue=[];
+  console.assert(fmtRuntime(0)===null && fmtRuntime(90)==='1h 30m' && fmtRuntime(45)==='45m', 'fmtRuntime formats');
+  const merged = mergeQueue([{id:1},{id:2}], [{id:2},{id:3}]);
+  console.assert(merged.length===3 && merged.map(c=>c.id).join(',')==='1,2,3', 'mergeQueue appends only new ids');
+  console.assert(initials('Greta Gerwig')==='GG' && initials('')==='?', 'initials');
   console.log('reel selftest OK');
 }
 </script>
