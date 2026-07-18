@@ -163,6 +163,25 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 }
 .badge.zero{display:none}
 
+/* Movies / TV segmented toggle — centered in the top chrome */
+.medium-toggle{
+  pointer-events:auto;display:flex;gap:2px;padding:3px;border-radius:999px;
+  background:var(--glass-fill);border:1px solid var(--glass-line);
+  backdrop-filter:blur(16px) saturate(160%);-webkit-backdrop-filter:blur(16px) saturate(160%);
+  box-shadow:0 8px 24px rgba(0,0,0,.12), inset 0 1px 0 var(--glass-hi);
+}
+.medium-toggle button{
+  padding:8px 16px;border-radius:999px;font-size:12.5px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--muted);transition:color .2s var(--e-out),background .2s;
+}
+.medium-toggle button.on{color:#231802;background:var(--gold)}
+body[data-screen="deckScreen"] .medium-toggle button:not(.on){color:#f6f2ea;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+
+/* thin separator + danger styling so destructive Reset is isolated from the safe icons */
+.tb-divider{width:1px;height:24px;align-self:center;background:var(--glass-line);opacity:.7}
+.icon-btn.danger{color:var(--muted)}
+.icon-btn.danger:hover{color:var(--nope);background:rgba(239,68,68,.16);box-shadow:0 8px 26px rgba(239,68,68,.30)}
+
 /* ============================================================= ONBOARDING */
 .onb{width:100%;max-width:520px;margin:auto;padding:96px 22px 34px;height:100dvh;
   display:flex;flex-direction:column;gap:20px;overflow-y:auto}
@@ -348,6 +367,10 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 .act.seen:hover{background:var(--glass-fill-strong)}
 .act.save{color:var(--gold)}
 .act.save:hover{background:rgba(221,154,52,.18);box-shadow:0 8px 26px rgba(221,154,52,.38)}
+.act.nope{color:var(--nope)}
+.act.nope:hover{background:rgba(239,68,68,.16);box-shadow:0 8px 26px rgba(239,68,68,.30)}
+.act.like{color:var(--like)}
+.act.like:hover{background:rgba(34,197,94,.16);box-shadow:0 8px 26px rgba(34,197,94,.30)}
 .act svg{width:24px;height:24px}
 .act.sm svg{width:21px;height:21px}
 
@@ -493,16 +516,21 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 <!-- top chrome -->
 <div class="topbar">
   <div class="brand"><span class="dot"></span>REEL</div>
+  <div class="medium-toggle" role="tablist" aria-label="Movies or TV">
+    <button class="on" id="modeMovie" data-medium="movie" role="tab" aria-selected="true">Movies</button>
+    <button id="modeTv" data-medium="tv" role="tab" aria-selected="false">TV</button>
+  </div>
   <div class="top-right">
     <button class="icon-btn" id="helpBtn" aria-label="Show the controls" title="Controls (?)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
     </button>
-    <button class="icon-btn" id="resetBtn" aria-label="Reset and start over" title="Reset">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
-    </button>
     <button class="icon-btn" id="listBtn" aria-label="Open watchlist" title="Watchlist">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v17l-6-4-6 4z"/></svg>
       <span class="badge zero" id="listBadge">0</span>
+    </button>
+    <span class="tb-divider" aria-hidden="true"></span>
+    <button class="icon-btn danger" id="resetBtn" aria-label="Reset and start over" title="Reset">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg>
     </button>
   </div>
 </div>
@@ -524,7 +552,7 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 
     <!-- step 2 -->
     <div class="panel glass hidden" id="step2">
-      <h2>Films you love <span class="hint" id="lovedCount">0/5</span></h2>
+      <h2><span id="lovedLabel">Films</span> you love <span class="hint" id="lovedCount">0/5</span></h2>
       <div class="search-wrap">
         <input class="search" id="searchInput" type="search" placeholder="Search a film you love…" autocomplete="off" />
       </div>
@@ -554,7 +582,10 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
 
 <!-- action bar (bottom): Meh (↑) · Info (↓) · Seen · Save -->
 <div class="actions glass hidden" id="actionBar">
-  <button class="act meh" data-act="meh" aria-label="Meh — not sure (swipe up)">
+  <button class="act nope" data-act="nope" aria-label="Pass — not for me">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <button class="act sm meh" data-act="meh" aria-label="Meh — not sure (swipe up)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
   </button>
   <button class="act sm info" data-act="expand" aria-label="Info and trailer (swipe down)">
@@ -563,8 +594,11 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
   <button class="act sm seen" data-act="seen" aria-label="Already seen it">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
   </button>
-  <button class="act save" data-act="save" aria-label="Save to watchlist (Enter)">
+  <button class="act sm save" data-act="save" aria-label="Save to watchlist (Enter)">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v17l-6-4-6 4z"/></svg>
+  </button>
+  <button class="act like" data-act="like" aria-label="Like — want to watch">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
   </button>
 </div>
 
@@ -611,6 +645,7 @@ body[data-screen="deckScreen"] .brand{color:#f6f2ea;text-shadow:0 2px 14px rgba(
       <div class="hint-row"><span class="hint-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span><span class="hint-label"><b>Like</b> — want to watch</span></div>
       <div class="hint-row"><span class="hint-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span><span class="hint-label"><b>Meh</b> — not sure</span></div>
       <div class="hint-row"><span class="hint-key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span><span class="hint-label"><b>Info</b> + trailer</span></div>
+      <div class="hint-row"><span class="hint-key">S</span><span class="hint-label"><b>Seen</b> it — loved or not</span></div>
       <div class="hint-row"><span class="hint-key">ENTER</span><span class="hint-label"><b>Save</b> to watchlist</span></div>
     </div>
     <div class="hint-foot">Press any key or tap to start</div>
@@ -654,6 +689,11 @@ const API = 'http://localhost:8181';
 const $  = (id) => document.getElementById(id);
 const reduceMotion = matchMedia('(prefers-reduced-motion:reduce)').matches;
 
+/* which library we're swiping — 'movie' | 'tv'. Sent on every request so the
+   backend keeps two entirely separate taste profiles. */
+let MEDIUM = 'movie';
+const med = (p) => p + (p.includes('?') ? '&' : '?') + 'medium=' + MEDIUM;
+
 /* --------------------------------------------------------------- state
    queue = the only thing we own. watchlist/seenLoved are backend-owned
    copies (hydrated by /api/state, updated optimistically after actions)
@@ -673,8 +713,10 @@ async function getJSON(path){
   return r.json();
 }
 async function postJSON(path, body){
+  // inject the active medium into every write; explicit body.medium still wins
+  const payload = { medium: MEDIUM, ...(body || {}) };
   const r = await fetch(API + path, {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body),
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload),
   });
   if(!r.ok) throw new Error(path+' '+r.status);
   return r.json();
@@ -726,11 +768,19 @@ let onbStep = 1;
 const selectedGenres = new Set();
 const lovedMovies = [];          // full Card objects, 3–5 of them
 
+/* singular/plural noun for the active medium, used across onboarding copy */
+const mediumNoun = (plural) => MEDIUM === 'tv' ? (plural ? 'shows' : 'show') : (plural ? 'films' : 'film');
+function applyMediumCopy(){
+  $('lovedLabel').textContent = MEDIUM === 'tv' ? 'Shows' : 'Films';
+  $('searchInput').placeholder = `Search a ${mediumNoun(false)} you love…`;
+}
+
 async function startOnboarding(){
   show('onboarding');
   $('actionBar').classList.add('hidden');
+  applyMediumCopy();
   try{
-    const { genres } = await getJSON('/api/genres');
+    const { genres } = await getJSON(med('/api/genres'));
     $('genreChips').innerHTML = '';
     for(const g of genres){
       const b = document.createElement('button');
@@ -755,7 +805,7 @@ function gotoStep(n){
   $('s2').classList.toggle('on', n===2);
   $('backBtn').classList.toggle('hidden', n===1);
   $('onbSub').textContent = n===1 ? 'Pick the genres you gravitate to.'
-                                  : 'Name a few films you already love.';
+                                  : `Name a few ${mediumNoun(true)} you already love.`;
   refreshOnbFooter();
 }
 
@@ -786,7 +836,7 @@ async function runSearch(q){
   if(searchAbort) searchAbort.abort();
   searchAbort = new AbortController();
   try{
-    const r = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}`, { signal:searchAbort.signal });
+    const r = await fetch(`${API}/api/search?q=${encodeURIComponent(q)}&medium=${MEDIUM}`, { signal:searchAbort.signal });
     const { results } = await r.json();
     renderResults(results || []);
   }catch(err){ if(err.name!=='AbortError') $('results').innerHTML=''; }
@@ -853,8 +903,9 @@ let infoPanel = null;   // the ONE persistent liquid-glass info node
 async function enterDeck(){
   show('deckScreen');
   $('actionBar').classList.remove('hidden');
-  glassify($('actionBar'), { blur:2, saturate:1.6, radius:999 });
-  document.querySelectorAll('.swipe-btn').forEach((b)=> glassify(b, { blur:2, saturate:1.6, radius:999 }));
+  // glassify once — enterDeck now re-runs on every medium switch, don't stack filters
+  if(!$('actionBar').__lg) glassify($('actionBar'), { blur:2, saturate:1.6, radius:999 });
+  document.querySelectorAll('.swipe-btn').forEach((b)=>{ if(!b.__lg) glassify(b, { blur:2, saturate:1.6, radius:999 }); });
   deckReady = true;
   await refill(true);
   if(!hintsSeen) openHints();     // first-run controls, shown once over the deck
@@ -863,14 +914,16 @@ async function enterDeck(){
 async function refill(initial){
   if(refilling) return;
   refilling = true;
+  const forMedium = MEDIUM;   // guard: drop the response if the user switches mid-flight
   if(initial && state.queue.length===0) renderSkeleton();
   try{
     // send the ids already sitting in the deck so /next never hands one back
     const { cards } = await postJSON('/api/next', { count:10, inQueue: state.queue.map(c=>c.id) });
+    if(forMedium !== MEDIUM) return;   // stale medium — ignore
     state.queue = mergeQueue(state.queue, cards);
     if(deckReady) renderDeck();
   }catch{
-    if(state.queue.length===0) renderEmpty(true);
+    if(forMedium === MEDIUM && state.queue.length===0) renderEmpty(true);
   }finally{
     refilling = false;
   }
@@ -1094,7 +1147,7 @@ async function openExpand(card){
   $('expandScrim').classList.add('open');
   $('expandView').classList.add('open');
   try{
-    const { movie } = await getJSON('/api/movie/'+card.id);
+    const { movie } = await getJSON(med('/api/movie/'+card.id));
     if(expandCard && expandCard.id===card.id) renderExpandFull(movie);
   }catch{ /* keep the shell — backdrop + basics still read fine offline */ }
 }
@@ -1297,10 +1350,11 @@ function wireGlass(){
   glassify(document.querySelector('.hints-panel'), { blur:3, saturate:1.6 });
 }
 
-async function boot(){
-  wireGlass();
+/* pull the current medium's state and drop into deck or onboarding.
+   shared by first boot and every Movies/TV switch. */
+async function hydrate(){
   try{
-    const s = await getJSON('/api/state');
+    const s = await getJSON(med('/api/state'));
     state.onboarded = !!s.onboarded;
     hintsSeen       = !!s.hintsSeen;
     state.watchlist = s.watchlist || [];
@@ -1313,6 +1367,35 @@ async function boot(){
     startOnboarding();
   }
 }
+
+/* ===================================================================
+   MEDIUM TOGGLE — Movies vs TV, two independent taste profiles
+   =================================================================== */
+function setModeButtons(){
+  $('modeMovie').classList.toggle('on', MEDIUM==='movie');
+  $('modeTv').classList.toggle('on', MEDIUM==='tv');
+  $('modeMovie').setAttribute('aria-selected', MEDIUM==='movie');
+  $('modeTv').setAttribute('aria-selected', MEDIUM==='tv');
+}
+async function switchMedium(m){
+  if((m!=='movie' && m!=='tv') || m===MEDIUM) return;
+  MEDIUM = m;
+  setModeButtons();
+  // tear down everything owned by the previous medium
+  closeDrawer(); closeExpand(); togglePop(false);
+  state.queue = []; state.watchlist = []; state.seenLoved = [];
+  selectedGenres.clear(); lovedMovies.length = 0; onbStep = 1;
+  $('results').innerHTML = ''; $('pickedRow').innerHTML = ''; $('searchInput').value = '';
+  deckReady = false;
+  await hydrate();
+}
+$('modeMovie').onclick = ()=> switchMedium('movie');
+$('modeTv').onclick    = ()=> switchMedium('tv');
+
+async function boot(){
+  wireGlass();
+  await hydrate();
+}
 boot();
 
 /* ---- one runnable check for the money path: #selftest in the URL ---- */
@@ -1321,6 +1404,8 @@ if(location.hash==='#selftest'){
   const merged = mergeQueue([{id:1},{id:2}], [{id:2},{id:3}]);
   console.assert(merged.length===3 && merged.map(c=>c.id).join(',')==='1,2,3', 'mergeQueue appends only new ids');
   console.assert(initials('Greta Gerwig')==='GG' && initials('')==='?', 'initials');
+  console.assert(med('/api/state')==='/api/state?medium=movie', 'med appends ?medium');
+  console.assert(med('/api/search?q=x').endsWith('&medium=movie'), 'med appends &medium when query exists');
   console.log('reel selftest OK');
 }
 </script>

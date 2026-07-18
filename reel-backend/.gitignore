@@ -1,0 +1,5 @@
+node_modules/
+.env
+reel.db
+reel.db-shm
+reel.db-wal

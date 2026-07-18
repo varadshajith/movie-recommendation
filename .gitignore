@@ -1,0 +1,4 @@
+# test/screenshot artifacts
+.playwright-mcp/
+*.jpeg
+*.png
