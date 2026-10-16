@@ -2,3 +2,10 @@
 .playwright-mcp/
 *.jpeg
 *.png
+
+# report output + build cache
+REPORT.pdf
+__pycache__/
+docs/report/report.built.html
+node_modules/
+.env

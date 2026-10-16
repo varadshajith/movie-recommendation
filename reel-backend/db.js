@@ -1,84 +1,85 @@
-// SQLite-backed persistent memory. Backend owns all state (contract v2).
-// Every per-taste table is keyed by `medium` ('movie' | 'tv') so Movies and
-// TV keep entirely separate profiles, exclusions, lists and caches.
-const Database = require('better-sqlite3');
+// Database layer: SQLite via Node's built-in `node:sqlite` (no native module to compile).
+// Every taste table is keyed by (user_id, medium) so each user keeps separate
+// Movies and TV profiles.
+const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, 'reel.db'));
-db.pragma('journal_mode = WAL');
-
+const db = new DatabaseSync(path.join(__dirname, 'app.db'));
 db.exec(`
-  CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
-  CREATE TABLE IF NOT EXISTS profile_tags(medium TEXT, tag TEXT, score REAL NOT NULL, PRIMARY KEY(medium, tag));
-  CREATE TABLE IF NOT EXISTS actions(id INTEGER PRIMARY KEY, medium TEXT, movie_id INT, action TEXT, weight REAL, ts INT);
-  CREATE TABLE IF NOT EXISTS excluded(medium TEXT, movie_id INT, until_ts INT, PRIMARY KEY(medium, movie_id));
-  CREATE TABLE IF NOT EXISTS lists(medium TEXT, movie_id INT, list TEXT, ts INT, PRIMARY KEY(medium, movie_id, list));
-  CREATE TABLE IF NOT EXISTS movie_cache(medium TEXT, id INT, json TEXT, fetched_at INT, PRIMARY KEY(medium, id));
+  PRAGMA journal_mode = WAL;
+  CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, username TEXT UNIQUE NOT NULL COLLATE NOCASE, pass_hash TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY, user_id INT NOT NULL);
+  CREATE TABLE IF NOT EXISTS settings(user_id INT, key TEXT, value TEXT, PRIMARY KEY(user_id, key));
+  CREATE TABLE IF NOT EXISTS profile_tags(user_id INT, medium TEXT, tag TEXT, score REAL, PRIMARY KEY(user_id, medium, tag));
+  CREATE TABLE IF NOT EXISTS actions(id INTEGER PRIMARY KEY, user_id INT, medium TEXT, movie_id INT, action TEXT, weight REAL, ts INT);
+  CREATE TABLE IF NOT EXISTS hidden(user_id INT, medium TEXT, movie_id INT, until_ts INT, PRIMARY KEY(user_id, medium, movie_id));
+  CREATE TABLE IF NOT EXISTS lists(user_id INT, medium TEXT, movie_id INT, list TEXT, ts INT, PRIMARY KEY(user_id, medium, movie_id, list));
+  CREATE TABLE IF NOT EXISTS movie_cache(medium TEXT, id INT, json TEXT, PRIMARY KEY(medium, id));
 `);
 
-// ---- prepared statements ----
-const S = {
-  getSetting: db.prepare('SELECT value FROM settings WHERE key = ?'),
-  setSetting: db.prepare(`INSERT INTO settings(key, value) VALUES(?, ?)
-    ON CONFLICT(key) DO UPDATE SET value = excluded.value`),
-  bumpTag: db.prepare(`INSERT INTO profile_tags(medium, tag, score) VALUES(?, ?, ?)
-    ON CONFLICT(medium, tag) DO UPDATE SET score = score + excluded.score`),
-  allTags: db.prepare('SELECT tag, score FROM profile_tags WHERE medium = ?'),
-  countTags: db.prepare('SELECT COUNT(*) AS n FROM profile_tags WHERE medium = ?'),
-  logAction: db.prepare('INSERT INTO actions(medium, movie_id, action, weight, ts) VALUES(?, ?, ?, ?, ?)'),
-  countActions: db.prepare('SELECT COUNT(*) AS n FROM actions WHERE medium = ?'),
-  // NB: table is named `excluded`, which collides with SQLite's ON CONFLICT
-  // `excluded` pseudo-table — so bind new values via named params.
-  exclude: db.prepare(`INSERT INTO excluded(medium, movie_id, until_ts) VALUES(@medium, @id, @until)
-    ON CONFLICT(medium, movie_id) DO UPDATE SET until_ts = @until`),
-  activeExcluded: db.prepare('SELECT movie_id FROM excluded WHERE medium = ? AND (until_ts IS NULL OR until_ts > ?)'),
-  addToList: db.prepare('INSERT OR IGNORE INTO lists(medium, movie_id, list, ts) VALUES(?, ?, ?, ?)'),
-  getList: db.prepare('SELECT movie_id FROM lists WHERE medium = ? AND list = ? ORDER BY ts DESC'),
-  countList: db.prepare('SELECT COUNT(*) AS n FROM lists WHERE medium = ? AND list = ?'),
-  getCache: db.prepare('SELECT json FROM movie_cache WHERE medium = ? AND id = ?'),
-  putCache: db.prepare(`INSERT INTO movie_cache(medium, id, json, fetched_at) VALUES(?, ?, ?, ?)
-    ON CONFLICT(medium, id) DO UPDATE SET json = excluded.json, fetched_at = excluded.fetched_at`),
-};
+const run = (sql, ...p) => db.prepare(sql).run(...p);
+const get = (sql, ...p) => db.prepare(sql).get(...p);
+const all = (sql, ...p) => db.prepare(sql).all(...p);
 
-const getSetting = (key) => S.getSetting.get(key)?.value ?? null;
-const setSetting = (key, value) => S.setSetting.run(key, String(value));
+// ---- users + login sessions ----
+const createUser = (username, passHash) =>
+  Number(run('INSERT INTO users(username, pass_hash) VALUES(?, ?)', username, passHash).lastInsertRowid);
+const findUser = (username) => get('SELECT * FROM users WHERE username = ?', username);
+const createSession = (token, userId) => run('INSERT INTO sessions(token, user_id) VALUES(?, ?)', token, userId);
+const deleteSession = (token) => run('DELETE FROM sessions WHERE token = ?', token);
+const userForToken = (token) =>
+  get('SELECT u.id, u.username FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ?', token);
 
-const bumpTag = (medium, tag, delta) => S.bumpTag.run(medium, tag, delta);
-// scorecard as { tag: score } — the profile shape the engine already expects
-const getProfileTags = (medium) => Object.fromEntries(S.allTags.all(medium).map((r) => [r.tag, r.score]));
-const hasProfile = (medium) => S.countTags.get(medium).n > 0;
+// ---- settings ----
+const getSetting = (uid, key) => get('SELECT value FROM settings WHERE user_id = ? AND key = ?', uid, key)?.value ?? null;
+const setSetting = (uid, key, value) =>
+  run(`INSERT INTO settings VALUES(?, ?, ?) ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value`, uid, key, String(value));
 
-const logAction = (medium, movieId, action, weight, ts) => S.logAction.run(medium, movieId, action, weight, ts);
-const swipeCount = (medium) => S.countActions.get(medium).n;
+// ---- taste profile: tag -> score ----
+const bumpTag = (uid, medium, tag, delta) =>
+  run(`INSERT INTO profile_tags VALUES(?, ?, ?, ?)
+       ON CONFLICT(user_id, medium, tag) DO UPDATE SET score = score + excluded.score`, uid, medium, tag, delta);
+const getProfileTags = (uid, medium) =>
+  Object.fromEntries(all('SELECT tag, score FROM profile_tags WHERE user_id = ? AND medium = ?', uid, medium).map((r) => [r.tag, r.score]));
+const hasProfile = (uid, medium) => !!get('SELECT 1 AS x FROM profile_tags WHERE user_id = ? AND medium = ? LIMIT 1', uid, medium);
 
-// untilTs = null -> excluded forever; a future ms timestamp -> resurfaces after it passes
-const exclude = (medium, movieId, untilTs) => S.exclude.run({ medium, id: movieId, until: untilTs });
-const activeExclusions = (medium, now) => S.activeExcluded.all(medium, now).map((r) => r.movie_id);
+// ---- swipe history ----
+const logAction = (uid, medium, movieId, action, weight, ts) =>
+  run('INSERT INTO actions(user_id, medium, movie_id, action, weight, ts) VALUES(?, ?, ?, ?, ?, ?)', uid, medium, movieId, action, weight, ts);
+const swipeCount = (uid, medium) => get('SELECT COUNT(*) AS n FROM actions WHERE user_id = ? AND medium = ?', uid, medium).n;
 
-const addToList = (medium, movieId, list, ts) => S.addToList.run(medium, movieId, list, ts);
-const getList = (medium, list) => S.getList.all(medium, list).map((r) => r.movie_id);
-const listCount = (medium, list) => S.countList.get(medium, list).n;
+// untilTs = null -> hidden forever; a future ms timestamp -> comes back after it passes
+const hide = (uid, medium, movieId, untilTs) =>
+  run(`INSERT INTO hidden VALUES(?, ?, ?, ?) ON CONFLICT(user_id, medium, movie_id) DO UPDATE SET until_ts = excluded.until_ts`,
+    uid, medium, movieId, untilTs);
+const hiddenIds = (uid, medium, now) =>
+  all('SELECT movie_id FROM hidden WHERE user_id = ? AND medium = ? AND (until_ts IS NULL OR until_ts > ?)', uid, medium, now)
+    .map((r) => r.movie_id);
 
+// ---- watchlist / seen-and-loved shelves ----
+const addToList = (uid, medium, movieId, list, ts) =>
+  run('INSERT OR IGNORE INTO lists VALUES(?, ?, ?, ?, ?)', uid, medium, movieId, list, ts);
+const getList = (uid, medium, list) =>
+  all('SELECT movie_id FROM lists WHERE user_id = ? AND medium = ? AND list = ? ORDER BY ts DESC', uid, medium, list).map((r) => r.movie_id);
+const listCount = (uid, medium, list) =>
+  get('SELECT COUNT(*) AS n FROM lists WHERE user_id = ? AND medium = ? AND list = ?', uid, medium, list).n;
+
+// ---- TMDB response cache (shared by all users) ----
 const getCachedMovie = (medium, id) => {
-  const row = S.getCache.get(medium, id);
+  const row = get('SELECT json FROM movie_cache WHERE medium = ? AND id = ?', medium, id);
   return row ? JSON.parse(row.json) : null;
 };
-const putCachedMovie = (medium, id, obj) => S.putCache.run(medium, id, JSON.stringify(obj), Date.now());
+const putCachedMovie = (medium, id, obj) =>
+  run('INSERT OR REPLACE INTO movie_cache VALUES(?, ?, ?)', medium, id, JSON.stringify(obj));
 
-// wipe every taste table except movie_cache (cache is just TMDB data, safe to keep).
-// No medium arg -> full wipe of both media (used by /api/reset).
-const resetAll = db.transaction(() => {
-  for (const t of ['settings', 'profile_tags', 'actions', 'excluded', 'lists']) {
-    db.exec(`DELETE FROM ${t}`);
-  }
-});
+// wipe one user's taste data (account + shared cache stay)
+const resetUser = (uid) => {
+  for (const t of ['settings', 'profile_tags', 'actions', 'hidden', 'lists']) run(`DELETE FROM ${t} WHERE user_id = ?`, uid);
+};
 
 module.exports = {
-  getSetting, setSetting,
-  bumpTag, getProfileTags, hasProfile,
-  logAction, swipeCount,
-  exclude, activeExclusions,
-  addToList, getList, listCount,
-  getCachedMovie, putCachedMovie,
-  resetAll,
+  createUser, findUser, createSession, deleteSession, userForToken,
+  getSetting, setSetting, bumpTag, getProfileTags, hasProfile,
+  logAction, swipeCount, hide, hiddenIds,
+  addToList, getList, listCount, getCachedMovie, putCachedMovie, resetUser,
 };
