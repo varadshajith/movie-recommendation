@@ -4,7 +4,7 @@
 
 @page { size: A4; margin: 26mm 22mm 24mm 30mm;
   @top-left { content: string(chapter); font: 8pt Inter, sans-serif; color: var(--grey); letter-spacing:.04em; }
-  @top-right { content: "Reel"; font: 8pt Inter, sans-serif; color: var(--grey); }
+  @top-right { content: "Movie Recommendation"; font: 8pt Inter, sans-serif; color: var(--grey); }
   @bottom-center { content: counter(page); font: 9pt Inter, sans-serif; color: var(--ink); }
 }
 @page cover { margin: 0; @top-left{content:none} @top-right{content:none} @bottom-center{content:none} }
