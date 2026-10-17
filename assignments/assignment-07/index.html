@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel — Create account</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="card">
+  <h1>Join <em>Reel.</em></h1>
+  <p class="sub">Create an account to keep your own taste profile.</p>
+
+  <!-- novalidate: we do the validation ourselves in script.js -->
+  <form id="register" novalidate>
+    <label>Username
+      <input id="username" autocomplete="username">
+      <small class="err" id="usernameErr"></small>
+    </label>
+    <label>Email
+      <input id="email" type="email" autocomplete="email">
+      <small class="err" id="emailErr"></small>
+    </label>
+    <label>Password
+      <input id="password" type="password" autocomplete="new-password">
+      <span class="meter"><span id="meterBar"></span></span>
+      <small class="err" id="passwordErr"></small>
+    </label>
+    <label>Confirm password
+      <input id="confirm" type="password" autocomplete="new-password">
+      <small class="err" id="confirmErr"></small>
+    </label>
+    <fieldset>
+      <legend>Favourite genres (pick at least 2)</legend>
+      <label class="check"><input type="checkbox" name="genre" value="Sci-Fi"> Sci-Fi</label>
+      <label class="check"><input type="checkbox" name="genre" value="Drama"> Drama</label>
+      <label class="check"><input type="checkbox" name="genre" value="Thriller"> Thriller</label>
+      <label class="check"><input type="checkbox" name="genre" value="Comedy"> Comedy</label>
+      <small class="err" id="genreErr"></small>
+    </fieldset>
+    <label class="check"><input id="terms" type="checkbox"> I agree to the terms</label>
+    <small class="err" id="termsErr"></small>
+
+    <button type="submit">Create account</button>
+  </form>
+
+  <div id="success" class="success" hidden></div>
+  <p class="alt"><button type="button" id="togglePw" class="link">Show passwords</button></p>
+</main>
+<script src="script.js"></script>
+</body>
+</html>

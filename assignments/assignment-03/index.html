@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel Diary — CSS types</title>
+
+<!-- 1. EXTERNAL CSS: the main styles live in style.css -->
+<link rel="stylesheet" href="style.css">
+
+<!-- 2. INTERNAL CSS: styles that only this page needs -->
+<style>
+  .note { border-left: 4px solid var(--gold); padding: 8px 12px; background: #fff8ec; }
+  .list li:first-child strong { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <!-- 3. INLINE CSS: style attribute directly on the element -->
+  <h1 style="font-size: 40px;">Reel <em>Diary</em></h1>
+  <span>Hi, Varad · <a href="#">Log out</a></span>
+</header>
+
+<main class="wrap">
+  <section class="card">
+    <h2>My diary (3)</h2>
+    <p class="note">External = <code>style.css</code>, internal = <code>&lt;style&gt;</code> in the head, inline = <code>style="..."</code> on the heading and the red tag below.</p>
+    <ul class="list">
+      <li>
+        <div>
+          <strong>Inception</strong>
+          <span class="tag">Movie</span>
+          <span class="tag watched">Watched</span>
+          <span class="tag">★ 9/10</span>
+          <p>Need to rewatch for the ending.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Dark</strong>
+          <span class="tag">TV</span>
+          <span class="tag">Want</span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong>Parasite</strong>
+          <span class="tag">Movie</span>
+          <span class="tag" style="background:#fee2e2; color:#991b1b;">Dropped</span>
+        </div>
+      </li>
+    </ul>
+  </section>
+</main>
+
+</body>
+</html>

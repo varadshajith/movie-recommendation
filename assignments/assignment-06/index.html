@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel — JS events &amp; array functions</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="wrap">
+  <h1>Reel <em>Taste Lab</em></h1>
+  <p class="sub">Click Like / Nope on each title. Your taste profile and the ranked list update using JavaScript array functions.</p>
+
+  <section>
+    <h2>Titles</h2>
+    <label>Filter by genre
+      <select id="genreFilter"><option value="">All</option></select>
+    </label>
+    <ul id="titles" class="list"></ul>
+  </section>
+
+  <section>
+    <h2>Your taste profile</h2>
+    <ul id="profile" class="list"></ul>
+    <p id="stats" class="sub"></p>
+    <button id="reset">Reset</button>
+  </section>
+</main>
+
+<!-- external JavaScript file -->
+<script src="script.js"></script>
+</body>
+</html>

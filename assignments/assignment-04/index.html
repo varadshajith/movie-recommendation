@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel — Responsive layout</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- FLEXBOX: top bar -->
+<header class="topbar">
+  <h1 class="brand">Reel</h1>
+  <nav class="seg">
+    <button class="on">Movies</button>
+    <button>TV</button>
+  </nav>
+  <button class="icon-btn">Watchlist</button>
+</header>
+
+<!-- GRID: page layout (sidebar + content), collapses on small screens -->
+<main class="layout">
+  <aside class="filters">
+    <h2>Genres</h2>
+    <div class="chips">
+      <span class="chip on">Sci-Fi</span>
+      <span class="chip">Drama</span>
+      <span class="chip on">Thriller</span>
+      <span class="chip">Comedy</span>
+      <span class="chip">Animation</span>
+    </div>
+  </aside>
+
+  <section>
+    <h2>Pick titles you loved</h2>
+    <!-- GRID: poster grid, column count changes with media queries -->
+    <div class="grid">
+      <div class="poster" style="--h:20">Inception</div>
+      <div class="poster" style="--h:200">Interstellar</div>
+      <div class="poster" style="--h:330">Parasite</div>
+      <div class="poster" style="--h:140">Dark</div>
+      <div class="poster" style="--h:260">Spirited Away</div>
+      <div class="poster" style="--h:0">Whiplash</div>
+      <div class="poster" style="--h:90">Arrival</div>
+      <div class="poster" style="--h:300">Dune</div>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

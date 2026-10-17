@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel — CSS positions</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- position: fixed — top bar stays at the top while scrolling -->
+<header class="topbar">
+  <span class="brand">Reel</span>
+  <!-- position: relative parent + absolute badge -->
+  <button class="icon-btn">Watchlist <span class="badge">3</span></button>
+</header>
+
+<main class="page">
+  <!-- position: relative deck; the cards inside are position: absolute and stacked with z-index -->
+  <div class="deck">
+    <article class="card pos2"><div class="poster" style="--h:260"></div></article>
+    <article class="card pos1"><div class="poster" style="--h:200"></div></article>
+    <article class="card pos0">
+      <div class="poster" style="--h:20"></div>
+      <div class="why">Because you like Sci-Fi</div>
+      <div class="stamp like">LIKE</div>
+      <div class="wild">Wildcard</div>
+      <div class="info">
+        <strong>Inception</strong>
+        <span>2010 · ★ 8.4 · 2h 28m</span>
+      </div>
+    </article>
+  </div>
+
+  <!-- position: sticky — sticks once you scroll to it -->
+  <section class="notes">
+    <h2 class="sticky">Positions used on this page</h2>
+    <ul>
+      <li><b>static</b> — default, this list</li>
+      <li><b>relative</b> — the deck and the Watchlist button (anchor for children)</li>
+      <li><b>absolute</b> — cards, LIKE stamp, badge, info box</li>
+      <li><b>fixed</b> — top bar and bottom action bar</li>
+      <li><b>sticky</b> — this heading</li>
+    </ul>
+    <p>Other properties: z-index, transform (rotate / translate / scale), overflow, inset, opacity, box-shadow, aspect-ratio, transition.</p>
+    <p class="spacer">Scroll down to see the sticky heading and fixed bars stay in place.</p>
+  </section>
+</main>
+
+<!-- position: fixed — action bar at the bottom -->
+<nav class="actionbar">
+  <button class="nope">✕</button>
+  <button class="meh">–</button>
+  <button class="save">★</button>
+  <button class="like">✓</button>
+</nav>
+
+</body>
+</html>

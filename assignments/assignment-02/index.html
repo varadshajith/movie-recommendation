@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel — Semantic HTML</title>
+</head>
+<body>
+
+<header>
+  <h1>Reel</h1>
+  <nav aria-label="Main navigation">
+    <ul>
+      <li><a href="#deck">Deck</a></li>
+      <li><a href="#watchlist">Watchlist</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section id="deck" aria-labelledby="deck-title">
+    <h2 id="deck-title">Tonight's picks</h2>
+
+    <article>
+      <header>
+        <h3>Inception</h3>
+        <p><time datetime="2010-07-16">2010</time> · ★ 8.4 · 2h 28m</p>
+      </header>
+      <figure>
+        <img src="https://image.tmdb.org/t/p/w342/oYuLEt3zVCKq57qu2F8dT7NIa6f.jpg" alt="Inception poster" width="200">
+        <figcaption>Directed by Christopher Nolan</figcaption>
+      </figure>
+      <p>A thief who steals secrets through dream-sharing is given one last job.</p>
+      <footer><mark>Because you like Science Fiction &amp; Christopher Nolan</mark></footer>
+    </article>
+
+    <article>
+      <header>
+        <h3>Breaking Bad</h3>
+        <p><time datetime="2008-01-20">2008</time> · ★ 8.9 · TV show</p>
+      </header>
+      <p>A chemistry teacher turns to making drugs to secure his family's future.</p>
+      <details>
+        <summary>Cast</summary>
+        <ul>
+          <li>Bryan Cranston</li>
+          <li>Aaron Paul</li>
+        </ul>
+      </details>
+    </article>
+  </section>
+
+  <aside id="watchlist" aria-labelledby="wl-title">
+    <h2 id="wl-title">Your watchlist</h2>
+    <ul>
+      <li>Interstellar</li>
+      <li>Parasite</li>
+      <li>Dark</li>
+    </ul>
+  </aside>
+
+  <section id="about">
+    <h2>About</h2>
+    <p>Reel learns your taste from every swipe: <strong>like</strong>, <strong>nope</strong> or <em>meh</em>.</p>
+    <address>Made by Varad Shajith</address>
+  </section>
+</main>
+
+<footer>
+  <p><small>Movie data from TMDB. Learning project.</small></p>
+</footer>
+
+</body>
+</html>

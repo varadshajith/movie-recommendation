@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reel — Swipe deck (DOM)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">Reel</span>
+  <button id="wlBtn" class="pill">Watchlist <span id="wlCount" class="badge">0</span></button>
+</header>
+
+<main class="stage">
+  <!-- cards are created by script.js -->
+  <div id="deck" class="deck"></div>
+  <p class="hint">Drag the card: right = like, left = nope, up = meh, tap = info.<br>Keys: ← → ↑ · Enter = save</p>
+</main>
+
+<nav class="actionbar">
+  <button data-action="nope" title="Nope (←)">✕</button>
+  <button data-action="meh" title="Meh (↑)">–</button>
+  <button data-action="save" title="Save (Enter)">★</button>
+  <button data-action="like" title="Like (→)">✓</button>
+</nav>
+
+<aside id="drawer" class="drawer" hidden>
+  <h2>Watchlist</h2>
+  <ul id="wlList"></ul>
+  <h2>History</h2>
+  <ol id="log"></ol>
+  <button id="closeDrawer" class="pill">Close</button>
+</aside>
+
+<script src="script.js"></script>
+</body>
+</html>

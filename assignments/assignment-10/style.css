@@ -1,0 +1,16 @@
+:root { --bg: #0d0b12; --ink: #f4efe6; --muted: #a39c92; --gold: #dd9a34; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 Inter, system-ui, sans-serif; }
+h1 em { font-style: normal; color: var(--gold); }
+.wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 40px; }
+.sub { color: var(--muted); }
+form { display: flex; gap: 8px; }
+input { flex: 1; font: inherit; padding: 10px 14px; border-radius: 999px; border: 1px solid #ffffff33; background: #ffffff10; color: inherit; }
+button { font: inherit; font-weight: 600; padding: 10px 20px; border: 0; border-radius: 999px; background: var(--gold); cursor: pointer; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+.card { background: #ffffff0d; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.card img, .noimg { width: 100%; aspect-ratio: 2 / 3; object-fit: cover; }
+.noimg { display: grid; place-items: center; background: #ffffff14; color: var(--muted); }
+.body { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.body p { margin: 6px 0 0; color: var(--muted); }
+.list { padding-left: 20px; }
