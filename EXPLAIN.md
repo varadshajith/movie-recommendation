@@ -10,7 +10,7 @@
 | File | Job |
 |------|-----|
 | `public/index.html` | The page structure (navbar, hero + search, results, trending, watchlist side panel, footer) |
-| `public/style.css` | Looks: colours (CSS variables), glass cards, gradient text, flexbox navbar, grid of cards, slide-in panel, mobile rule |
+| `public/style.css` | Looks: colours (CSS variables), glass cards, gradient text, flexbox navbar, grid of cards, side panel, mobile rule |
 | `public/script.js` | Browser logic: validate the search, fetch from the server, build cards with DOM, open/close the panel |
 | `server.js` | Express server: serves the page and 5 API routes (search, trending, list, add, delete) |
 | `db.js` | SQLite database: save / list / delete watchlist movies |
@@ -33,12 +33,12 @@
 | Change the main gold colour (buttons, logo) | `public/style.css:8` (`--accent1`) |
 | Change the headline gradient colours | `public/style.css:8-10` (the 3 accents), used at `public/style.css:58` |
 | Change the glass card colour / border | `public/style.css:6` / `public/style.css:7` |
-| Change the card size | `public/style.css:95` (the `160px`) |
-| Change the card hover effect | `public/style.css:107` |
-| Change where the rating badge sits | `public/style.css:115-118` (`position`, `top`, `right`) |
-| Change the watchlist panel width | `public/style.css:136` (the `360px`) |
-| Change the panel slide animation | `public/style.css:143` and `public/style.css:146` (`translateX`) |
-| Change the mobile breakpoint | `public/style.css:161` (the `600px`) |
+| Change the card size | `public/style.css:94` (the `160px`) |
+| Change the card hover effect | `public/style.css:105` |
+| Change where the rating badge sits | `public/style.css:113-118` (`position`, `top`, `right`) |
+| Change the watchlist panel width | `public/style.css:134` (the `360px`) |
+| Change how the panel is hidden/shown | `public/style.css:141` and `public/style.css:143` (`translateX`) |
+| Change the mobile breakpoint | `public/style.css:158` (the `600px`) |
 | Change the headline size | `public/style.css:54` (and mobile size in the `@media` block) |
 | Change the validation message | `public/script.js:22` |
 | Change the minimum search length | `public/script.js:21` (the `2`) |
@@ -54,7 +54,7 @@
 | 1-2 HTML: headings, lists, image, semantic tags | `public/index.html` (`header`, `nav`, `main`, `section`, `aside`, `footer`) |
 | 3 CSS (external file) | `public/style.css` |
 | 4 Responsive: flexbox, grid, media query | `public/style.css` (`display: flex`, `display: grid`, `@media`) |
-| 5 CSS properties: `position`, `transform`, `transition` | rating badge `public/style.css:115` (`position: absolute` inside the `position: relative` card at line 99); panel `public/style.css:143` (`transform: translateX`) |
+| 5 CSS properties: `position`, `transform` | rating badge `public/style.css:113` (`position: absolute` inside the `position: relative` card at line 99); panel `public/style.css:141` (`transform: translateX`) |
 | 6 Linked JS file, events, array functions (`map`, `forEach`, `some`) | `public/script.js` (`.some` line 77, `.forEach` line 89) and `server.js` (`.map(toMovie)`) |
 | 7 Form validation | `public/script.js` (`search` function) |
 | 10 Fetch API + JSON | `public/script.js` (`fetch` calls) |

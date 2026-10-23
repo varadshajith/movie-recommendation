@@ -72,7 +72,6 @@ h1 {
   border: 1px solid var(--border);
   border-radius: 999px;
   backdrop-filter: blur(14px);
-  transition: 0.2s;
 }
 #search-form:focus-within { border-color: var(--accent1); box-shadow: 0 0 24px rgba(221, 154, 52, 0.5); }
 input {
@@ -102,9 +101,8 @@ h2 { font-size: 24px; }
   border: 1px solid var(--border);
   border-radius: 16px;
   backdrop-filter: blur(10px);
-  transition: 0.2s;
 }
-.card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(221, 154, 52, 0.35); }
+.card:hover { border-color: var(--accent1); } /* hover: just a gold border, no movement */
 .card img, .no-poster { width: 100%; aspect-ratio: 2 / 3; border-radius: 10px; object-fit: cover; }
 .no-poster { background: #d6d2ca; }
 .card p { margin: 8px 0 4px; font-size: 14px; font-weight: 600; }
@@ -125,7 +123,7 @@ h2 { font-size: 24px; }
 }
 
 /* Dark layer behind the panel */
-#overlay { position: fixed; inset: 0; background: rgba(27, 27, 31, 0.35); opacity: 0; pointer-events: none; transition: 0.2s; }
+#overlay { position: fixed; inset: 0; background: rgba(27, 27, 31, 0.35); opacity: 0; pointer-events: none; }
 #overlay.open { opacity: 1; pointer-events: auto; }
 
 /* Watchlist panel: parked off-screen to the right, slides in when it has class "open" */
@@ -141,7 +139,6 @@ h2 { font-size: 24px; }
   background: #f5f3ee;
   border-left: 1px solid var(--border);
   transform: translateX(100%);
-  transition: 0.3s;
 }
 #panel.open { transform: translateX(0); }
 .panel-top { display: flex; justify-content: space-between; align-items: center; }
