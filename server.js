@@ -31,7 +31,7 @@ app.get('/api/search', async (req, res) => {
   try {
     const url = 'https://api.themoviedb.org/3/search/movie?api_key=' +
       process.env.TMDB_KEY + '&query=' + encodeURIComponent(q);
-    const data = await (await fetch(url)).json();
+    const data = await (await fetch(url).catch(() => fetch(url))).json(); // TMDB sometimes drops the connection, so try once more
     res.json((data.results || []).map(toMovie));
   } catch (e) {
     res.status(500).json({ error: 'Search failed' });
@@ -42,7 +42,7 @@ app.get('/api/search', async (req, res) => {
 app.get('/api/trending', async (req, res) => {
   try {
     const url = 'https://api.themoviedb.org/3/trending/movie/week?api_key=' + process.env.TMDB_KEY;
-    const data = await (await fetch(url)).json();
+    const data = await (await fetch(url).catch(() => fetch(url))).json(); // TMDB sometimes drops the connection, so try once more
     res.json((data.results || []).map(toMovie));
   } catch (e) {
     res.status(500).json({ error: 'Could not load trending' });
