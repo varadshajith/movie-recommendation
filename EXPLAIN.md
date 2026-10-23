@@ -54,7 +54,7 @@
 | 1-2 HTML: headings, lists, image, semantic tags | `public/index.html` (`header`, `nav`, `main`, `section`, `aside`, `footer`) |
 | 3 CSS (external file) | `public/style.css` |
 | 4 Responsive: flexbox, grid, media query | `public/style.css` (`display: flex`, `display: grid`, `@media`) |
-| 5 CSS properties: `position`, `transform` | rating badge `public/style.css:113` (`position: absolute` inside the `position: relative` card at line 99); panel `public/style.css:141` (`transform: translateX`) |
+| 5 CSS properties: `position`, `transform` | rating badge `public/style.css:113` (`position: absolute` inside the `position: relative` card at line 98); panel `public/style.css:141` (`transform: translateX`) |
 | 6 Linked JS file, events, array functions (`map`, `forEach`, `some`) | `public/script.js` (`.some` line 77, `.forEach` line 89) and `server.js` (`.map(toMovie)`) |
 | 7 Form validation | `public/script.js` (`search` function) |
 | 10 Fetch API + JSON | `public/script.js` (`fetch` calls) |
