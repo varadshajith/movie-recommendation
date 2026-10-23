@@ -10,8 +10,8 @@ const PORT = 8181;
 
 app.use(express.json()); // lets us read JSON sent in POST bodies
 
-// Send index.html, style.css and script.js to the browser (dotfiles like .env are blocked)
-app.use(express.static(__dirname, { dotfiles: 'deny' }));
+// Send the files in the public/ folder (index.html, style.css, script.js) to the browser
+app.use(express.static('public'));
 
 // GET /api/search?q=batman - ask TMDB for movies and send back a short list
 app.get('/api/search', async (req, res) => {
