@@ -1,9 +1,0 @@
-:root { --bg: #ece9e3; --ink: #1b1b1f; --gold: #dd9a34; --line: #d9d4c9; }
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 Inter, system-ui, sans-serif; }
-.wrap { max-width: 640px; margin: 40px auto; padding: 24px; background: #fff; border: 1px solid var(--line); border-radius: 18px; }
-h1 em { font-style: normal; color: var(--gold); }
-a { color: var(--ink); }
-form { display: flex; gap: 8px; }
-input { flex: 1; font: inherit; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; }
-button { font: inherit; font-weight: 600; padding: 8px 18px; border: 0; border-radius: 999px; background: var(--gold); cursor: pointer; }

@@ -1,14 +1,4 @@
-# test/screenshot artifacts
-.playwright-mcp/
-*.jpeg
-*.png
-
-# report output + build cache
-REPORT.pdf
-__pycache__/
-docs/report/report.built.html
 node_modules/
 .env
-
-# assignment 15 database
-assignments/assignment-15/watchlist.db
+*.db
+*.db-*

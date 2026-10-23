@@ -1,0 +1,69 @@
+/* Change colours here - they are used everywhere below */
+:root {
+  --main-color: #e50914;
+  --bg-color: #141414;
+  --card-color: #222222;
+  --text-color: #ffffff;
+}
+
+/* Page basics */
+body {
+  margin: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: Arial, sans-serif;
+}
+
+/* Header: title on the left, search form on the right */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--card-color);
+}
+
+h1 { color: var(--main-color); margin: 0; }
+
+form { display: flex; gap: 8px; }
+
+input { padding: 8px; font-size: 16px; }
+
+button {
+  padding: 8px 16px;
+  background: var(--main-color);
+  color: var(--text-color);
+  border: none;
+  cursor: pointer;
+}
+
+/* Button gets faded when the mouse is over it */
+button:hover { opacity: 0.7; }
+
+main { padding: 24px; }
+
+/* Error messages */
+#message { color: var(--main-color); }
+
+/* Movie cards sit in a grid: as many 160px columns as fit */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 160px);
+  gap: 16px;
+}
+
+.card {
+  background: var(--card-color);
+  padding: 8px;
+  text-align: center;
+}
+
+.card img { width: 100%; }
+
+footer { text-align: center; padding: 16px; }
+
+/* On small screens: stack the header and use 2 columns */
+@media (max-width: 600px) {
+  header { flex-direction: column; gap: 12px; }
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
