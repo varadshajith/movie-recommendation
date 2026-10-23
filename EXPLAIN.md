@@ -52,3 +52,39 @@
 | 15 REST API + database | `server.js` routes + `db.js` |
 
 React (practicals 8-9) and PHP (12-13) are on the `main` branch, not here.
+
+## Likely viva questions
+
+**HTML / CSS**
+- **What is semantic HTML?** Tags that say what the content *is*, not how it looks: `header`, `main`, `section`, `footer`. It helps screen readers and search engines. Used in `public/index.html`.
+- **Inline vs internal vs external CSS?** Inline = `style="..."` on one tag. Internal = a `<style>` block inside the HTML file. External = a separate `.css` file linked with `<link>`. This project uses external (`public/style.css`), because one file styles the whole site.
+- **What are CSS variables?** Values like `--main: red;` defined once in `:root` and used with `var(--main)`. Change one line and the whole site changes colour.
+- **Flexbox vs Grid?** Flexbox lays things out in one direction (a row or a column), e.g. the header and search form. Grid lays things out in two dimensions (rows and columns), e.g. the movie cards.
+- **What does a media query do?** It applies CSS only when a condition is true, e.g. `@media (max-width: 600px)` changes the layout on phones.
+- **CSS position values?** `static` (default), `relative` (moved from its normal place), `absolute` (placed relative to the nearest positioned parent), `fixed` (stuck to the screen), `sticky` (scrolls normally until it hits a point, then sticks).
+
+**JavaScript**
+- **How is the JS file linked?** `<script src="script.js"></script>` at the bottom of `index.html`, so the HTML is loaded before the script runs.
+- **What is the DOM?** The browser's tree of objects built from the HTML. JS changes the page through it: `document.createElement`, `appendChild`, `textContent`.
+- **What does `addEventListener` do?** It runs a function when something happens, e.g. a form `submit` or a button `click`.
+- **What is form validation?** Checking the input before using it. Here an empty or too-short search shows a message and doesn't call the server.
+- **Why `event.preventDefault()`?** A form submit normally reloads the page. This stops the reload so JS can handle the submit instead.
+- **What do `map` / `filter` / `forEach` do?** `map` makes a new array by changing each item. `filter` keeps only the items that pass a test. `forEach` just runs code for each item.
+- **What does `fetch` return?** A Promise for the server's response. `await res.json()` turns the response body into a JS object.
+- **What is JSON?** A text format for data, like `{"id": 1, "title": "Batman"}`. The server and the browser talk to each other in JSON.
+- **What are `async` / `await`?** A way to wait for slow things (network, database) without freezing the page.
+- **Why `textContent` and not `innerHTML`?** `textContent` treats data as plain text, so a movie title containing `<script>` can't run as code (XSS protection).
+
+**Node / Express / Database**
+- **What is Node.js?** JavaScript running on the server instead of in the browser.
+- **What is Express?** A small Node library for building web servers: routes, middleware and static files.
+- **What is a route?** A method + URL pair mapped to a function, e.g. `app.get('/api/watchlist', ...)`.
+- **What is REST?** A style of API where URLs are things and HTTP methods are actions. GET = read, POST = create, PUT = update, DELETE = remove.
+- **What is middleware?** A function that runs on every request before the route. `express.json()` reads JSON bodies. `express.static('public')` sends the files in `public/`.
+- **Why only serve `public/`?** So `.env` (the API key), `reel.db` and the server code can't be downloaded from the browser.
+- **Why does the TMDB API key stay on the server?** Anything sent to the browser can be seen by anyone. The browser asks our server, and our server asks TMDB with the key.
+- **What is SQLite?** A database stored in a single file (`reel.db`), with no separate database server. We use Node's built-in `node:sqlite`.
+- **What is SQL injection, and how is it prevented?** An attacker puts SQL code into an input. `?` placeholders in `db.js` send the values separately from the SQL, so they are never run as code.
+- **What does `INSERT OR IGNORE` do?** It skips the insert if that movie id already exists, so there are no duplicates.
+- **What do these status codes mean?** 200 OK, 201 Created, 400 bad input from the user, 404 not found, 500 server error.
+- **What are CRUD operations?** Create, Read, Update, Delete. Here: add (C), view (R), remove (D). There is no update, because editing was removed to keep the app simple.
