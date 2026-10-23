@@ -9,10 +9,10 @@
 ## What each file does
 | File | Job |
 |------|-----|
-| `public/index.html` | The page structure (header, search form, results, watchlist, footer) |
-| `public/style.css` | Looks: colours (CSS variables), flexbox header, grid of cards, mobile rule |
-| `public/script.js` | Browser logic: validate the search, fetch from the server, build cards with DOM |
-| `server.js` | Express server: serves the page and 4 API routes (search, list, add, delete) |
+| `public/index.html` | The page structure (navbar, hero + search, results, trending, watchlist side panel, footer) |
+| `public/style.css` | Looks: colours (CSS variables), glass cards, gradient text, flexbox navbar, grid of cards, slide-in panel, mobile rule |
+| `public/script.js` | Browser logic: validate the search, fetch from the server, build cards with DOM, open/close the panel |
+| `server.js` | Express server: serves the page and 5 API routes (search, trending, list, add, delete) |
 | `db.js` | SQLite database: save / list / delete watchlist movies |
 | `package.json` | Project info and the `npm start` command |
 
@@ -20,36 +20,50 @@
 | Teacher asks | File : line |
 |--------------|-------------|
 | Change the page (tab) title | `public/index.html:6` |
-| Change the heading text "Reel" | `public/index.html:11` |
-| Change the Search button text | `public/index.html:15` |
-| Change the search box hint text | `public/index.html:14` |
-| Change a section heading | `public/index.html:24` and `public/index.html:29` |
-| Change the main (red) colour | `public/style.css:3` |
-| Change the background colour | `public/style.css:4` |
-| Change the card colour | `public/style.css:5` |
-| Change the card size | `public/style.css:51` (the `160px`) |
-| Change number of grid columns on mobile | `public/style.css:68` (the `2`) |
-| Change the mobile breakpoint | `public/style.css:66` (the `600px`) |
-| Change the button hover effect | `public/style.css:41` |
-| Change the validation message | `public/script.js:13` |
-| Change the minimum search length | `public/script.js:12` (the `2`) |
-| Change the Add / Remove button text | `public/script.js:46` / `public/script.js:77` |
+| Change the logo text "Reel" | `public/index.html:14` |
+| Change the big headline text | `public/index.html:22` |
+| Change the subtitle text | `public/index.html:23` |
+| Change the Search button text | `public/index.html:26` |
+| Change the search box hint text | `public/index.html:25` |
+| Change the "Trending this week" title | `public/index.html:38` |
+| Change the watchlist panel title | `public/index.html:49` |
+| Change the "Watchlist" navbar button | `public/index.html:15` |
+| Change the background colour | `public/style.css:3` (`--bg`) |
+| Change the text colour | `public/style.css:4` (`--text`) |
+| Change the main gold colour (buttons, logo) | `public/style.css:8` (`--accent1`) |
+| Change the headline gradient colours | `public/style.css:8-10` (the 3 accents), used at `public/style.css:58` |
+| Change the glass card colour / border | `public/style.css:6` / `public/style.css:7` |
+| Change the card size | `public/style.css:95` (the `160px`) |
+| Change the card hover effect | `public/style.css:107` |
+| Change where the rating badge sits | `public/style.css:115-118` (`position`, `top`, `right`) |
+| Change the watchlist panel width | `public/style.css:136` (the `360px`) |
+| Change the panel slide animation | `public/style.css:143` and `public/style.css:146` (`translateX`) |
+| Change the mobile breakpoint | `public/style.css:161` (the `600px`) |
+| Change the headline size | `public/style.css:54` (and mobile size in the `@media` block) |
+| Change the validation message | `public/script.js:22` |
+| Change the minimum search length | `public/script.js:21` (the `2`) |
+| Change the Add / Added button text | `public/script.js:78` |
+| Change the Remove button text | `public/script.js:138` |
 | Change the port | `server.js:9` (then open the new port in the browser) |
-| Change the API (TMDB) URL | `server.js:21` |
+| Change the TMDB search URL | `server.js:32` |
+| Change the TMDB trending URL | `server.js:44` |
 
 ## Which practical each file shows
 | Practical | Where |
 |-----------|-------|
-| 1-2 HTML: headings, lists, image, semantic tags | `public/index.html` |
+| 1-2 HTML: headings, lists, image, semantic tags | `public/index.html` (`header`, `nav`, `main`, `section`, `aside`, `footer`) |
 | 3 CSS (external file) | `public/style.css` |
 | 4 Responsive: flexbox, grid, media query | `public/style.css` (`display: flex`, `display: grid`, `@media`) |
-| 5 CSS properties | `public/style.css` |
-| 6 Linked JS file, events, array functions (`map`, `forEach`) | `public/script.js` |
+| 5 CSS properties: `position`, `transform`, `transition` | rating badge `public/style.css:115` (`position: absolute` inside the `position: relative` card at line 99); panel `public/style.css:143` (`transform: translateX`) |
+| 6 Linked JS file, events, array functions (`map`, `forEach`, `some`) | `public/script.js` (`.some` line 77, `.forEach` line 89) and `server.js` (`.map(toMovie)`) |
 | 7 Form validation | `public/script.js` (`search` function) |
 | 10 Fetch API + JSON | `public/script.js` (`fetch` calls) |
-| 11 DOM manipulation + events | `public/script.js` (`createElement`, `addEventListener`) |
+| 11 DOM manipulation + events | `public/script.js` (`createElement`, `addEventListener`, `classList.toggle`) |
 | 14 Node + Express server, routing, static files (`public/`) | `server.js` |
 | 15 REST API + database | `server.js` routes + `db.js` |
+
+## How the trending row works
+On page load `loadTrending()` (`public/script.js:41`) calls `GET /api/trending` (`server.js:42`). The server asks TMDB once (`trending/movie/week`), turns each movie into a short object with `toMovie` (`server.js:17`, shared with search) and sends the list back. Trending cards and search-result cards are built by the same `makeCard` function (`public/script.js:53`).
 
 React (practicals 8-9) and PHP (12-13) are on the `main` branch, not here.
 
@@ -61,6 +75,7 @@ React (practicals 8-9) and PHP (12-13) are on the `main` branch, not here.
 - **What are CSS variables?** Values like `--main: red;` defined once in `:root` and used with `var(--main)`. Change one line and the whole site changes colour.
 - **Flexbox vs Grid?** Flexbox lays things out in one direction (a row or a column), e.g. the header and search form. Grid lays things out in two dimensions (rows and columns), e.g. the movie cards.
 - **What does a media query do?** It applies CSS only when a condition is true, e.g. `@media (max-width: 600px)` changes the layout on phones.
+- **Where do the trending movies come from?** The browser calls our `/api/trending` route, which asks TMDB's `trending/movie/week` endpoint (with the API key hidden on the server) and sends back a short list of movies.
 - **CSS position values?** `static` (default), `relative` (moved from its normal place), `absolute` (placed relative to the nearest positioned parent), `fixed` (stuck to the screen), `sticky` (scrolls normally until it hits a point, then sticks).
 
 **JavaScript**

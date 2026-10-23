@@ -13,6 +13,17 @@ app.use(express.json()); // lets us read JSON sent in POST bodies
 // Send the files in the public/ folder (index.html, style.css, script.js) to the browser
 app.use(express.static('public'));
 
+// Turn one TMDB movie into the short object our page needs
+function toMovie(m) {
+  return {
+    id: m.id,
+    title: m.title,
+    year: (m.release_date || '').slice(0, 4),
+    poster: m.poster_path ? 'https://image.tmdb.org/t/p/w200' + m.poster_path : null,
+    rating: m.vote_average ? m.vote_average.toFixed(1) : null, // shown only, not saved
+  };
+}
+
 // GET /api/search?q=batman - ask TMDB for movies and send back a short list
 app.get('/api/search', async (req, res) => {
   const q = (req.query.q || '').trim();
@@ -21,16 +32,20 @@ app.get('/api/search', async (req, res) => {
     const url = 'https://api.themoviedb.org/3/search/movie?api_key=' +
       process.env.TMDB_KEY + '&query=' + encodeURIComponent(q);
     const data = await (await fetch(url)).json();
-    // Keep only the fields the page needs
-    const movies = (data.results || []).map(m => ({
-      id: m.id,
-      title: m.title,
-      year: (m.release_date || '').slice(0, 4),
-      poster: m.poster_path ? 'https://image.tmdb.org/t/p/w200' + m.poster_path : null,
-    }));
-    res.json(movies);
+    res.json((data.results || []).map(toMovie));
   } catch (e) {
     res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+// GET /api/trending - the movies trending on TMDB this week
+app.get('/api/trending', async (req, res) => {
+  try {
+    const url = 'https://api.themoviedb.org/3/trending/movie/week?api_key=' + process.env.TMDB_KEY;
+    const data = await (await fetch(url)).json();
+    res.json((data.results || []).map(toMovie));
+  } catch (e) {
+    res.status(500).json({ error: 'Could not load trending' });
   }
 });
 

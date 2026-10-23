@@ -4,32 +4,54 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reel - Movie Watchlist</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Top bar: logo on the left, watchlist button on the right -->
   <header>
-    <h1>Reel</h1>
-    <!-- Search form: text box + button -->
-    <form id="search-form">
-      <input type="text" id="query" placeholder="Search movies...">
-      <button type="submit">Search</button>
-    </form>
+    <nav>
+      <span class="logo">🎬 Reel</span>
+      <button id="watchlist-btn">Watchlist <span id="count">0</span></button>
+    </nav>
   </header>
 
   <main>
-    <!-- Messages (like errors) appear here -->
-    <p id="message"></p>
+    <!-- Hero: headline, subtitle and the search bar -->
+    <section class="hero">
+      <h1>Find your next favourite movie</h1>
+      <p class="subtitle">Search any film, see what is trending, and save it to your watchlist.</p>
+      <form id="search-form">
+        <input type="text" id="query" placeholder="Search movies...">
+        <button type="submit">Search</button>
+      </form>
+      <p id="message"></p>
+    </section>
 
-    <section>
-      <h2>Search Results</h2>
+    <!-- Hidden until the user searches -->
+    <section id="results-section" hidden>
+      <h2 id="results-title"></h2>
       <div id="results" class="grid"></div>
     </section>
 
     <section>
-      <h2>My Watchlist</h2>
-      <div id="watchlist" class="grid"></div>
+      <h2>🔥 Trending this week</h2>
+      <div id="trending" class="grid"></div>
     </section>
   </main>
+
+  <!-- Dark layer behind the panel; click it to close -->
+  <div id="overlay"></div>
+
+  <!-- Slide-in watchlist panel -->
+  <aside id="panel">
+    <div class="panel-top">
+      <h2>My Watchlist</h2>
+      <button id="close-btn">✕</button>
+    </div>
+    <p id="empty">No movies yet — add some!</p>
+    <div id="watchlist"></div>
+  </aside>
 
   <footer>
     <p>Reel - data from TMDB</p>
