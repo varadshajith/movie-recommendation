@@ -1,17 +1,19 @@
 // server.js - the Express web server (the "back end")
+const path = require('node:path');
 const express = require('express');
 const db = require('./db');
+const auth = require('./auth');
 
-// Load TMDB_KEY from the .env file (ignore if the file is missing)
-try { process.loadEnvFile('.env'); } catch (e) { console.log('No .env file found'); }
+// Load TMDB_KEY from the .env file in the project folder (ignore if the file is missing)
+try { process.loadEnvFile(path.join(__dirname, '..', '.env')); } catch (e) { console.log('No .env file found'); }
 
 const app = express();
-const PORT = 8181;
+const PORT = process.env.PORT || 8181;
 
 app.use(express.json()); // lets us read JSON sent in POST bodies
 
-// Send the files in the public/ folder (index.html, style.css, script.js) to the browser
-app.use(express.static('public'));
+// Send the files in the public/ folder (pages, css/, js/) to the browser
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Turn one TMDB movie into the short object our page needs
 function toMovie(m) {
@@ -23,6 +25,13 @@ function toMovie(m) {
     rating: m.vote_average ? m.vote_average.toFixed(1) : null, // shown only, not saved
   };
 }
+
+// ---------- Login ----------
+app.post('/api/register', auth.register);
+app.post('/api/login', auth.login);
+app.post('/api/logout', auth.requireLogin, auth.logout);
+
+// ---------- Movies from TMDB ----------
 
 // GET /api/search?q=batman - ask TMDB for movies and send back a short list
 app.get('/api/search', async (req, res) => {
@@ -49,25 +58,27 @@ app.get('/api/trending', async (req, res) => {
   }
 });
 
-// GET /api/watchlist - send every saved movie
-app.get('/api/watchlist', (req, res) => {
-  try { res.json(db.getAll()); }
+// ---------- Watchlist (logged-in users only; each user has their own) ----------
+
+// GET /api/watchlist - send every movie this user saved
+app.get('/api/watchlist', auth.requireLogin, (req, res) => {
+  try { res.json(db.getAll(req.user.id)); }
   catch (e) { res.status(500).json({ error: 'Could not load watchlist' }); }
 });
 
 // POST /api/watchlist - save a movie sent as JSON
-app.post('/api/watchlist', (req, res) => {
+app.post('/api/watchlist', auth.requireLogin, (req, res) => {
   const m = req.body;
   if (!Number.isInteger(m.id) || typeof m.title !== 'string') {
     return res.status(400).json({ error: 'Need integer id and string title' });
   }
-  try { db.add(m); res.status(201).json({ ok: true }); }
+  try { db.add(req.user.id, m); res.status(201).json({ ok: true }); }
   catch (e) { res.status(500).json({ error: 'Could not save movie' }); }
 });
 
 // DELETE /api/watchlist/:id - remove a saved movie
-app.delete('/api/watchlist/:id', (req, res) => {
-  try { db.remove(Number(req.params.id)); res.json({ ok: true }); }
+app.delete('/api/watchlist/:id', auth.requireLogin, (req, res) => {
+  try { db.remove(req.user.id, Number(req.params.id)); res.json({ ok: true }); }
   catch (e) { res.status(500).json({ error: 'Could not delete movie' }); }
 });
 

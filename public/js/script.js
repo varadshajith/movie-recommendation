@@ -1,5 +1,9 @@
 // script.js - the browser code (the "front end")
 
+// Not logged in? Go to the login page
+const token = localStorage.getItem('token');
+if (!token) location.replace('login.html');
+
 // Grab the page elements we need
 const form = document.getElementById('search-form');
 const queryInput = document.getElementById('query');
@@ -15,6 +19,21 @@ const overlay = document.getElementById('overlay');
 let watchlist = [];
 let trending = [];
 let results = [];
+
+// Call our API with the login token; a 401 means the login is no longer valid
+async function api(url, options = {}) {
+  const res = await fetch(url, { ...options, headers: { ...options.headers, Authorization: 'Bearer ' + token } });
+  if (res.status === 401) { logout(); throw new Error('Not logged in'); }
+  return res;
+}
+
+// Forget the token on the server and in the browser, then go to the login page
+async function logout() {
+  await fetch('/api/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } }).catch(() => {});
+  localStorage.removeItem('token');
+  localStorage.removeItem('username');
+  location.replace('login.html');
+}
 
 // Search for movies; shows a message if the text is too short
 async function search(q) {
@@ -92,7 +111,7 @@ function renderCards(container, movies) {
 // Send a movie to the server to be saved; show a message if it fails
 async function addToWatchlist(movie) {
   try {
-    const res = await fetch('/api/watchlist', {
+    const res = await api('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(movie),
@@ -107,13 +126,13 @@ async function addToWatchlist(movie) {
 
 // Delete a movie on the server, then refresh everything
 async function removeFromWatchlist(id) {
-  await fetch('/api/watchlist/' + id, { method: 'DELETE' });
+  await api('/api/watchlist/' + id, { method: 'DELETE' });
   loadWatchlist();
 }
 
 // Ask the server for the saved movies, then redraw the panel and the cards
 async function loadWatchlist() {
-  const res = await fetch('/api/watchlist');
+  const res = await api('/api/watchlist');
   watchlist = await res.json();
   document.getElementById('count').textContent = watchlist.length;
   document.getElementById('empty').hidden = watchlist.length > 0;
@@ -155,6 +174,10 @@ form.addEventListener('submit', event => {
 document.getElementById('watchlist-btn').addEventListener('click', togglePanel);
 document.getElementById('close-btn').addEventListener('click', togglePanel);
 overlay.addEventListener('click', togglePanel);
+document.getElementById('logout-btn').addEventListener('click', logout);
+
+// Show who is logged in
+document.getElementById('user').textContent = localStorage.getItem('username') || '';
 
 // When the page opens, load the trending movies and the saved watchlist
 loadTrending();

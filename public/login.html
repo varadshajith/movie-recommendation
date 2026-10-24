@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reel - Log in</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="login">
+    <h1>Reel</h1>
+    <p class="subtitle">Log in to see your watchlist.</p>
+
+    <!-- One form: "Log in" submits it, "Create account" registers with the same fields -->
+    <form id="login-form" class="login-form">
+      <label>Username <input type="text" id="username" autocomplete="username"></label>
+      <label>Password <input type="password" id="password" autocomplete="current-password"></label>
+      <p id="message"></p>
+      <button type="submit">Log in</button>
+      <button type="button" id="register-btn">Create account</button>
+    </form>
+  </main>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

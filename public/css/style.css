@@ -10,7 +10,7 @@
   --accent3: #b9731a; /* deep amber */
 }
 
-/* Page basics: dark background with a soft purple/blue glow at the top */
+
 body {
   margin: 0;
   font-family: 'Inter', sans-serif; /* Bebas Neue is used for the logo and headline */
@@ -26,6 +26,9 @@ nav {
   align-items: center;
   padding: 16px 32px;
 }
+/* Right side of the top bar: username, Watchlist and Log out */
+.nav-right { display: flex; align-items: center; gap: 12px; }
+#user { color: var(--muted); font-weight: 600; }
 .logo { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 1px; color: var(--accent1); }
 
 /* All buttons: purple-to-blue gradient, rounded */
@@ -93,9 +96,9 @@ h2 { font-size: 24px; }
 /* Movie cards sit in a grid: as many 160px+ columns as fit */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
 
-/* Glass card that lifts when the mouse is over it */
+/* Glass card; position: relative so the rating badge can sit inside it */
 .card {
-  position: relative; /* so the rating badge can sit inside the card */
+  position: relative;
   padding: 10px;
   background: var(--card);
   border: 1px solid var(--border);
@@ -151,6 +154,14 @@ h2 { font-size: 24px; }
 .item img { width: 48px; border-radius: 6px; }
 .item div { flex: 1; font-size: 14px; }
 .item button { padding: 6px 12px; font-size: 12px; }
+
+/* Login page: one glass box in the middle of the screen */
+.login { max-width: 360px; margin: 80px auto; padding: 0 16px; text-align: center; }
+.login-form { display: flex; flex-direction: column; gap: 12px; padding: 24px; text-align: left; background: var(--card); border: 1px solid var(--border); border-radius: 16px; }
+.login-form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; }
+.login-form input { padding: 10px 14px; background: #fff; border: 1px solid #d6d2ca; border-radius: 10px; }
+.login-form input:focus { border-color: var(--accent1); }
+.login-form #message { margin: 0; }
 
 footer { text-align: center; padding: 24px; color: var(--muted); }
 

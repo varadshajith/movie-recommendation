@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reel - Movie Watchlist</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <!-- Top bar: logo on the left, watchlist button on the right -->
   <header>
     <nav>
-      <span class="logo">🎬 Reel</span>
-      <button id="watchlist-btn">Watchlist <span id="count">0</span></button>
+      <span class="logo">Reel</span>
+      <div class="nav-right">
+        <span id="user"></span>
+        <button id="watchlist-btn">Watchlist <span id="count">0</span></button>
+        <button id="logout-btn">Log out</button>
+      </div>
     </nav>
   </header>
 
@@ -23,7 +27,7 @@
       <p class="subtitle">Search any film, see what is trending, and save it to your watchlist.</p>
       <form id="search-form">
         <input type="text" id="query" placeholder="Search movies...">
-        <button type="submit">Search</button>
+        <button type="submit"> Search</button>
       </form>
       <p id="message"></p>
     </section>
@@ -35,7 +39,7 @@
     </section>
 
     <section>
-      <h2>🔥 Trending this week</h2>
+      <h2> Trending this week</h2>
       <div id="trending" class="grid"></div>
     </section>
   </main>
@@ -57,6 +61,6 @@
     <p>Reel - data from TMDB</p>
   </footer>
 
-  <script src="script.js"></script>
+  <script src="js/script.js"></script>
 </body>
 </html>
